@@ -204,7 +204,9 @@ const ws = new WebSocket('ws://localhost:3000');
 // Subscribe using username (default)
 ws.send(JSON.stringify({
     type: 'subscribe',
-    identifier: '@channelname'
+    identifier: 'ceresfauna',
+    identifierType: 'username', // this is the default
+    platform: 'youtube' // this is the default
 }));
 
 // Handle incoming messages
