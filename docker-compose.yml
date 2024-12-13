@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.http.address=:80"
+      - "--entrypoints.https.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=your-email@example.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - web
+
+  microservice-livechat:
+    image: roffidaijoubu/microservice-livechat:latest
+    labels:
+      - "traefik.http.routers.microservice-livechat.rule=Host(`wschat.oristarium.com`)"
+      - "traefik.http.services.microservice-livechat.loadbalancer.server.port=3000"
+      - "traefik.http.routers.microservice-livechat.entrypoints=https"
+      - "traefik.http.routers.microservice-livechat.tls.certresolver=myresolver"
+    networks:
+      - web
+
+networks:
+  web:
+    external: true

@@ -1,0 +1,51 @@
+name: CI/CD Pipeline for Microservice
+
+on:
+  push:
+    branches:
+      - main  # Trigger the pipeline when pushing to the main branch
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Step 3: Build and push Docker image
+      - name: Build and push Docker image
+        run: |
+          docker build -t roffidaijoubu/microservice-livechat:latest .
+          docker push roffidaijoubu/microservice-livechat:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Deploy to VPS
+      - name: Deploy to VPS
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${SSH_KEY}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          ssh $VPS_USER@$VPS_HOST "
+            docker pull roffidaijoubu/microservice-livechat:latest &&
+            docker stop microservice-livechat || true &&
+            docker rm microservice-livechat || true &&
+            docker run -d --name microservice-livechat --network web -p 3000:3000 roffidaijoubu/microservice-livechat:latest
+          "
