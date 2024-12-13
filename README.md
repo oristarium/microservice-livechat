@@ -25,71 +25,151 @@ npm install
 node server.js
 ```
 
-## Deployment Instructions
+## WebSocket Protocol
 
-### Prerequisites
-- Ubuntu 22.04
-- Docker
-- Docker Compose
+Note: Each WebSocket connection can only be subscribed to one live chat at a time. Subscribing to a new chat will automatically unsubscribe from the current one.
 
-### Deployment Steps
+### Client Messages
 
-1. Clone the repository:
-```bash
-cd /opt
-sudo mkdir youtube-chat
-sudo chown $USER:$USER youtube-chat
-cd youtube-chat
-git clone [REPOSITORY_URL] .
+1. Subscribe to a chat:
+```javascript
+{
+    "type": "subscribe",
+    "identifier": string,      // Channel username, ID, or livestream ID
+    "identifierType": "username" | "channelId" | "liveId", // defaults to "username"
+    "platform": "youtube"      // defaults to "youtube", future support for other platforms
+}
 ```
 
-2. Build and run with Docker:
-```bash
-docker-compose up -d --build
+2. Unsubscribe from current chat:
+```javascript
+{
+    "type": "unsubscribe"
+}
 ```
 
-3. Verify the service is running:
-```bash
-docker-compose ps
+### Server Messages
+
+1. Status Updates:
+```javascript
+{
+    "type": "status",
+    "status": "started" | "subscribed" | "unsubscribed",
+    "liveId": string,     // Only present for "started" status
+    "identifier": string  // Only present for "subscribed" status
+}
 ```
 
-### Maintenance Commands
-
-- View logs:
-```bash
-docker-compose logs -f
+2. Error Messages:
+```javascript
+{
+    "type": "error",
+    "error": string,
+    "code": string,      // Error code for specific errors
+    "details": string    // Optional additional error details
+}
 ```
 
-- Restart service:
-```bash
-docker-compose restart
+Common error codes:
+- `STREAM_NOT_LIVE`: The stream is not currently live
+- `STREAM_ENDED`: The stream has ended
+- `INVALID_MESSAGE_TYPE`: Unknown message type received
+
+3. Chat Messages:
+```javascript
+{
+    "type": "chat",
+    "data": {
+        "type": "chat",
+        "platform": "youtube",
+        "timestamp": "2024-03-20T12:34:56.789Z",
+        "message_id": string,
+        "room_id": string,
+        "data": {
+            "author": {
+                "id": string,
+                "username": string,
+                "display_name": string,
+                "avatar_url": string,
+                "roles": {
+                    "broadcaster": boolean,
+                    "moderator": boolean,
+                    "subscriber": boolean,
+                    "verified": boolean
+                },
+                "badges": [
+                    {
+                        "type": "subscriber" | "moderator" | "verified" | "custom",
+                        "label": string,
+                        "image_url": string
+                    }
+                ]
+            },
+            "content": {
+                "raw": string,        // Original message with emotes
+                "formatted": string,  // Message with emote codes
+                "sanitized": string,  // Plain text only
+                "elements": [         // Message broken into parts
+                    {
+                        "type": "text" | "emote",
+                        "value": string,
+                        "position": [number, number],
+                        "metadata"?: {  // Only for emotes
+                            "url": string,
+                            "alt": string,
+                            "is_custom": boolean
+                        }
+                    }
+                ]
+            },
+            "metadata": {
+                "type": "chat" | "super_chat",
+                "monetary_data"?: {    // Only for super_chat
+                    "amount": string,
+                    "formatted": string,
+                    "color": string
+                },
+                "sticker"?: {         // Only for sticker super_chats
+                    "url": string,
+                    "alt": string
+                }
+            }
+        }
+    }
+}
 ```
 
-- Stop service:
-```bash
-docker-compose down
-```
+## Example Usage
 
-- Update from repository:
-```bash
-git pull
-docker-compose up -d --build
-```
-
-## WebSocket Usage
-
-Connect to the WebSocket endpoint:
 ```javascript
 const ws = new WebSocket('ws://localhost:3000');
 
-// Subscribe to a channel
+// Subscribe using username (default)
 ws.send(JSON.stringify({
     type: 'subscribe',
-    identifier: 'YOUTUBE_CHANNEL_ID',
+    identifier: '@channelname'
+}));
+
+// Or subscribe using channel ID
+ws.send(JSON.stringify({
+    type: 'subscribe',
+    identifier: 'UCxxxxxxxxxxxxxxxx',
     identifierType: 'channelId'
 }));
 
-// Listen for messages
+// Or subscribe to specific livestream
+ws.send(JSON.stringify({
+    type: 'subscribe',
+    identifier: 'xxxxxxxxxxxxxx',
+    identifierType: 'liveId'
+}));
+
+// Unsubscribe when done
+ws.send(JSON.stringify({
+    type: 'unsubscribe'
+}));
+
+// Handle incoming messages
 ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
     
@@ -101,194 +181,18 @@ ws.onmessage = (event) => {
             console.log('Status update:', message.status);
             break;
         case 'error':
-            console.error('Error:', message.error);
+            console.error('Error:', message.error, message.code);
             break;
     }
 };
 ```
 
-## API Reference
-
-### Incoming Messages (Client to Server)
-
-Subscribe to a channel:
-```javascript
-{
-    type: 'subscribe',
-    identifier: string,      // Channel ID, handle, or livestream ID
-    identifierType: 'channelId' | 'handle' | 'liveId'
-}
-```
-
-### Outgoing Messages (Server to Client)
-
-Chat message format:
-```javascript
-{
-    "type": "chat",
-    "platform": "youtube"|"twitch"|"tiktok",
-    "timestamp": "2024-03-20T12:34:56.789Z",
-    "message_id": "unique-message-id",
-    "room_id": "stream-or-channel-id",
-    "data": {
-        "author": {
-            "id": "user-unique-id",
-            "username": "username",
-            "display_name": "Display Name",
-            "avatar_url": "https://example.com/avatar.jpg",
-            "roles": {
-                "broadcaster": false,
-                "moderator": true,
-                "subscriber": true,
-                "verified": false
-            },
-            "badges": [
-                {
-                    "type": "subscriber"|"moderator"|"verified"|"custom",
-                    "label": "Member (1 year)",
-                    "image_url": "https://example.com/badge.png"
-                }
-            ]
-        },
-        "content": {
-            "raw": "Hello 😊 world! :custom-emote:",
-            "formatted": "Hello 😊 world! :custom-emote:",
-            "sanitized": "Hello world!",
-            "elements": [
-                {
-                    "type": "text",
-                    "value": "Hello ",
-                    "position": [0, 6]
-                },
-                {
-                    "type": "emote",
-                    "value": "😊",
-                    "position": [6, 7],
-                    "metadata": {
-                        "url": "https://example.com/emote.png",
-                        "alt": "smiling face",
-                        "is_custom": false
-                    }
-                },
-                {
-                    "type": "text",
-                    "value": " world! ",
-                    "position": [7, 14]
-                },
-                {
-                    "type": "emote",
-                    "value": "custom-emote",
-                    "position": [14, 26],
-                    "metadata": {
-                        "url": "https://example.com/custom-emote.png",
-                        "alt": "custom emote",
-                        "is_custom": true
-                    }
-                }
-            ]
-        },
-        "metadata": {
-            "type": "chat"|"super_chat"|"subscription"|"follow",
-            "monetary_data": {
-                "amount": "10.00",
-                "currency": "USD",
-                "formatted": "$10.00",
-                "color": "#FF0000"
-            },
-            "sticker": {
-                "url": "https://example.com/sticker.png",
-                "alt": "sticker description"
-            }
-        }
-    }
-}
-```
-
-Example chat message response:
-```javascript
-{
-    "type": "chat",
-    "platform": "youtube",
-    "timestamp": "2024-03-20T12:34:56.789Z",
-    "message_id": "abc123xyz",
-    "room_id": "UCxxxxxxxxxxxxxxx",
-    "data": {
-        "author": {
-            "id": "UCyyyyyyyyyyyy",
-            "username": "user123",
-            "display_name": "Cool User",
-            "avatar_url": "https://yt3.ggpht.com/avatar123",
-            "roles": {
-                "broadcaster": false,
-                "moderator": false,
-                "subscriber": true,
-                "verified": false
-            },
-            "badges": [
-                {
-                    "type": "subscriber",
-                    "label": "Member (2 years)",
-                    "image_url": "https://yt3.ggpht.com/badge123"
-                }
-            ]
-        },
-        "content": {
-            "raw": "Hello everyone! 👋 :heart-emoji: Great stream!",
-            "formatted": "Hello everyone! 👋 :heart-emoji: Great stream!",
-            "sanitized": "Hello everyone! Great stream!",
-            "elements": [
-                {
-                    "type": "text",
-                    "value": "Hello everyone! ",
-                    "position": [0, 14]
-                },
-                {
-                    "type": "emote",
-                    "value": "👋",
-                    "position": [14, 15]
-                },
-                {
-                    "type": "emote",
-                    "value": "heart-emoji",
-                    "position": [16, 27],
-                    "metadata": {
-                        "url": "https://yt3.ggpht.com/heart-emoji.png",
-                        "alt": "heart emoji",
-                        "is_custom": true
-                    }
-                },
-                {
-                    "type": "text",
-                    "value": " Great stream!",
-                    "position": [27, 40]
-                }
-            ]
-        },
-        "metadata": {
-            "type": "chat"
-        }
-    }
-}
-```
-
-Status update format:
-```javascript
-{
-    type: 'status',
-    status: 'started' | 'subscribed',
-    liveId?: string,
-    identifier?: string
-}
-```
-
-Error message format:
-```javascript
-{
-    type: 'error',
-    error: string
-}
-```
-
 ## Health Check
 
-GET `/health` - Returns the status of the service and number of active streams.
+GET `/health` - Returns the status of the service and number of active streams:
+```javascript
+{
+    "status": "ok",
+    "activeStreams": number
+}
+```
