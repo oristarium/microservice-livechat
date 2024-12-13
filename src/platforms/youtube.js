@@ -159,12 +159,25 @@ class YouTubeChatHandler {
         return await this.liveChat.start();
     }
 
-    stop() {
-        this.chatStats.reset();
-        this.liveChat.stop();
+    async stop() {
+        try {
+            // Stop the chat first
+            if (this.liveChat) {
+                this.liveChat.stop();
+            }
+            // Then cleanup stats
+            if (this.chatStats) {
+                await this.chatStats.cleanup();
+            }
+        } catch (error) {
+            console.error('Error during cleanup:', error);
+        }
     }
 
-    // Add method to get current stats
+    async cleanup() {
+        await this.stop();
+    }
+
     getCurrentStats() {
         return this.chatStats.getStats();
     }

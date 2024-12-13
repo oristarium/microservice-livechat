@@ -94,19 +94,52 @@
         }
         .connected { background-color: #4CAF50; color: white; }
         .disconnected { background-color: #f44336; color: white; }
+        .error { background-color: #ff9800; color: white; }
+
+        /* Helper text styling */
+        .helper-text {
+            grid-column: 1 / -1; /* Span full width */
+            margin-top: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .helper-text {
+            margin-top: 8px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .controls input[type="text"] {
+            min-width: 250px;
+            padding: 4px 8px;
+        }
+
+        .controls select {
+            padding: 4px;
+        }
     </style>
 </head>
 <body>
     <!-- Connection controls -->
     <div class="controls">
-        <input type="text" id="channel-id" placeholder="Channel ID/Username" value="holoen_ceciliaimmergreen">
+        <input type="text" id="channel-id" placeholder="Enter ID without @ prefix" value="holoen_ceciliaimmergreen">
         <select id="identifier-type">
-            <option value="username">Username</option>
-            <option value="channelId">Channel ID</option>
+            <option value="username">Username (without @)</option>
+            <option value="channelId">Channel ID (UC...)</option>
+            <option value="liveId">Live ID (watch?v=...)</option>
         </select>
         <button onclick="connect()">Connect</button>
         <button onclick="disconnect()">Disconnect</button>
         <div id="connection-status" class="disconnected">Disconnected</div>
+        <div class="helper-text">
+            <small>
+                • Username: Channel handle without @ (e.g., username)<br>
+                • Channel ID: YouTube channel ID (e.g., UC...)<br>
+                • Live ID: Video ID from URL (e.g., watch?v=...)
+            </small>
+        </div>
     </div>
 
     <!-- Live chat messages container -->
@@ -201,7 +234,17 @@
                                 updateStatus(data);
                                 break;
                             case 'error':
-                                console.error('Error:', data.error);
+                                const statusEl = document.getElementById('connection-status');
+                                statusEl.textContent = `Error: ${data.error}`;
+                                statusEl.className = 'error';
+                                
+                                // If stream is not live, clear the chat container
+                                if (data.code === 'STREAM_NOT_LIVE') {
+                                    document.getElementById('chat-container').innerHTML = 
+                                        '<div class="helper-text">Stream is not currently live</div>';
+                                    document.getElementById('stats-content').innerHTML = '';
+                                    document.getElementById('storage-type').textContent = '';
+                                }
                                 break;
                             default:
                                 console.warn('Unknown message type:', data.type);

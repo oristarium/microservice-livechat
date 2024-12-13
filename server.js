@@ -27,9 +27,10 @@ async function cleanupStream(channelId, sendEndedMessage = true) {
         activeStreams.delete(channelId);
         
         try {
-            // Properly cleanup the chat handler
-            await streamData.chatHandler.cleanup();
-            streamData.chatHandler.stop();
+            if (streamData.chatHandler) {
+                // Use the new cleanup method
+                await streamData.chatHandler.cleanup();
+            }
             
             // Only send ended message if requested and not during unsubscribe
             if (sendEndedMessage) {

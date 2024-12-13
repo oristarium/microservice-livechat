@@ -51,7 +51,19 @@ services:
 
 ## WebSocket Protocol
 
-Note: Each WebSocket connection can be subscribed to one live chat at a time. Multiple clients can subscribe to the same chat.
+Each WebSocket connection can:
+- Subscribe to multiple live chats simultaneously (in separate browser tabs/windows)
+- Share live chat subscriptions with other clients
+- Maintain independent subscription states
+- Receive real-time updates for all subscribed chats
+
+The server will:
+- Maintain separate chat handlers for each unique channel
+- Share chat handlers between clients watching the same channel
+- Clean up chat handlers only when no clients are watching
+- Track statistics per channel (either in memory or Redis)
+
+Note: While technically possible to subscribe to multiple chats in one connection, the current test interface (`/test`) is designed to handle one subscription per tab for better user experience and resource management.
 
 ### Client Messages
 
@@ -59,7 +71,7 @@ Note: Each WebSocket connection can be subscribed to one live chat at a time. Mu
 ```javascript
 {
     "type": "subscribe",
-    "identifier": string,      // Channel username, ID, or livestream ID
+    "identifier": string,      // Channel username (without @), ID, or livestream ID
     "identifierType": "username" | "channelId" | "liveId", // defaults to "username"
     "platform": "youtube"      // defaults to "youtube", future support for other platforms
 }
