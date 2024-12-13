@@ -51,8 +51,27 @@ async function cleanupStream(channelId, sendEndedMessage = true) {
     }
 }
 
-// Add these routes before the WebSocket setup
-app.use('/test', express.static(path.join(__dirname, 'public')));
+// Add proper CORS and static file handling
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.header('Access-Control-Allow-Headers', '*');
+    next();
+});
+
+// Serve static files with proper headers
+app.use('/test', (req, res, next) => {
+    if (req.path === '/' || req.path === '') {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    } else {
+        express.static(path.join(__dirname, 'public'))(req, res, next);
+    }
+});
+
+// Add health check endpoint before WebSocket setup
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', activeStreams: activeStreams.size });
+});
 
 // Handle WebSocket connections
 wss.on('connection', (ws) => {
@@ -255,11 +274,6 @@ wss.on('connection', (ws) => {
             }
         }
     });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', activeStreams: activeStreams.size });
 });
 
 // Graceful shutdown
