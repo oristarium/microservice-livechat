@@ -44,8 +44,10 @@ jobs:
           echo "${SSH_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          # Test SSH connection to ensure the key works
-          ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "echo SSH connection successful"
+          # Ensure the Docker 'web' network exists
+          ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
+            docker network inspect web >/dev/null 2>&1 || docker network create web
+          "
 
           # Deploy the microservice
           ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
