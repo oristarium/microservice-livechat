@@ -27,8 +27,13 @@ services:
       - "traefik.http.services.microservice-livechat.loadbalancer.server.port=3000"
       - "traefik.http.routers.microservice-livechat.entrypoints=https"
       - "traefik.http.routers.microservice-livechat.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.websocket-headers.headers.customRequestHeaders.Connection=Upgrade"
+      - "traefik.http.middlewares.websocket-headers.headers.customRequestHeaders.Upgrade=websocket"
     networks:
       - web
+    expose:
+      - "3000"
+    restart: unless-stopped
 
 networks:
   web:
