@@ -38,6 +38,7 @@ jobs:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Set up SSH private key for GitHub Actions
           mkdir -p ~/.ssh
@@ -49,10 +50,18 @@ jobs:
             docker network inspect web >/dev/null 2>&1 || docker network create web
           "
 
-          # Deploy the microservice
+          # Pull the latest repository and update docker-compose
           ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
-            docker pull roffidaijoubu/microservice-livechat:latest &&
-            docker stop microservice-livechat || true &&
-            docker rm microservice-livechat || true &&
-            docker run -d --name microservice-livechat --network web -p 3000:3000 roffidaijoubu/microservice-livechat:latest
+            cd /var/www/microservice-livechat || (mkdir -p /var/www/microservice-livechat && cd /var/www/microservice-livechat) &&
+            git init &&
+            git remote add origin https://ghp_${GITHUB_TOKEN}@github.com/roffidaijoubu/microservice-livechat.git || true &&
+            git fetch origin &&
+            git reset --hard origin/main
+          "
+
+          # Deploy the microservice using docker-compose
+          ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
+            cd /var/www/microservice-livechat &&
+            docker-compose down &&
+            docker-compose up -d
           "
