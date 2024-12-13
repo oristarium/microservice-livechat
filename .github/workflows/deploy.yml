@@ -68,15 +68,15 @@ jobs:
             sudo docker-compose up -d
           "
 
-      # Step 2: Deploy to Server
-      - name: Deploy to Server
+      # Step 2: Make sure the new image is running
+      - name: Make sure the new image is running
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /path/to/deployment
+            cd /var/www/microservice-livechat
             docker-compose down
             docker-compose pull
             docker-compose up -d
