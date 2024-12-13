@@ -49,7 +49,7 @@ wss.on('connection', (ws) => {
                 case CLIENT_MESSAGE_TYPES.SUBSCRIBE:
                     // Clean up previous subscription if it exists
                     if (currentChannelId) {
-                        cleanupStream(currentChannelId);
+                        cleanupStream(currentChannelId, false);
                     }
 
                     const { 
