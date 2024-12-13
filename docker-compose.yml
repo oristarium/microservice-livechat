@@ -19,6 +19,12 @@ services:
       - "./letsencrypt:/letsencrypt"
     networks:
       - web
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   microservice-livechat:
     image: roffidaijoubu/microservice-livechat:latest
@@ -29,10 +35,28 @@ services:
       - "traefik.http.routers.microservice-livechat.tls.certresolver=myresolver"
       - "traefik.http.middlewares.websocket-headers.headers.customRequestHeaders.Connection=Upgrade"
       - "traefik.http.middlewares.websocket-headers.headers.customRequestHeaders.Upgrade=websocket"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Frame-Options=DENY"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-XSS-Protection=1; mode=block"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Referrer-Policy=strict-origin-when-cross-origin"
+      - "traefik.http.routers.microservice-livechat.middlewares=security-headers,websocket-headers"
     networks:
       - web
     expose:
       - "3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
 networks:

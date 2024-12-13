@@ -2,7 +2,18 @@ node_modules
 npm-debug.log
 .git
 .gitignore
+.github
 README.md
 .env
 *.md
-package-lock copy.json 
+package-lock copy.json
+.dockerignore
+Dockerfile
+docker-compose.yml
+tests/
+coverage/
+.vscode/
+.idea/
+*.log
+tmp/
+temp/
