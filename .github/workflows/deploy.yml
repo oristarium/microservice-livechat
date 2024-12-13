@@ -47,21 +47,21 @@ jobs:
 
           # Ensure the Docker 'web' network exists
           ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
-            docker network inspect web >/dev/null 2>&1 || docker network create web
+            sudo docker network inspect web >/dev/null 2>&1 || sudo docker network create web
           "
 
           # Pull the latest repository and update docker-compose
           ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
-            cd /var/www/microservice-livechat || (mkdir -p /var/www/microservice-livechat && cd /var/www/microservice-livechat) &&
-            git init &&
-            git remote add origin https://ghp_${PAT_TOKEN}@github.com/roffidaijoubu/microservice-livechat.git || true &&
-            git fetch origin &&
-            git reset --hard origin/main
+            cd /var/www/microservice-livechat || (sudo mkdir -p /var/www/microservice-livechat && cd /var/www/microservice-livechat) &&
+            sudo git init &&
+            sudo git remote add origin https://ghp_${PAT_TOKEN}@github.com/roffidaijoubu/microservice-livechat.git || true &&
+            sudo git fetch origin &&
+            sudo git reset --hard origin/main
           "
 
           # Deploy the microservice using docker-compose
           ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
             cd /var/www/microservice-livechat &&
-            docker-compose down &&
-            docker-compose up -d
+            sudo docker-compose down &&
+            sudo docker-compose up -d
           "
