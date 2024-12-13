@@ -7,7 +7,14 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ 
+    server,
+    path: '/',  // Accept WebSocket connections on any path
+    verifyClient: (info, cb) => {
+        console.log('Verifying client connection:', info.req.headers);
+        cb(true);  // Accept all connections for now
+    }
+});
 
 // Store active streams and their clients
 const activeStreams = new Map();

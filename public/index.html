@@ -122,44 +122,57 @@
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}`;
             
-            ws = new WebSocket(wsUrl);
+            // Add error handling and logging
+            try {
+                ws = new WebSocket(wsUrl);
+                console.log('Attempting connection to:', wsUrl);
 
-            ws.onopen = () => {
-                document.getElementById('connection-status').className = 'connected';
-                document.getElementById('connection-status').textContent = 'Connected';
-                
-                // Subscribe to channel
-                ws.send(JSON.stringify({
-                    type: 'subscribe',
-                    identifier: channelId,
-                    identifierType: identifierType,
-                    platform: 'youtube'
-                }));
-            };
+                ws.onerror = (error) => {
+                    console.error('WebSocket Error:', error);
+                    document.getElementById('connection-status').className = 'disconnected';
+                    document.getElementById('connection-status').textContent = 'Connection Error';
+                };
 
-            ws.onclose = () => {
-                document.getElementById('connection-status').className = 'disconnected';
-                document.getElementById('connection-status').textContent = 'Disconnected';
-            };
+                ws.onopen = () => {
+                    console.log('WebSocket connected successfully');
+                    document.getElementById('connection-status').className = 'connected';
+                    document.getElementById('connection-status').textContent = 'Connected';
+                    
+                    // Subscribe to channel
+                    ws.send(JSON.stringify({
+                        type: 'subscribe',
+                        identifier: channelId,
+                        identifierType: identifierType,
+                        platform: 'youtube'
+                    }));
+                };
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                
-                switch (data.type) {
-                    case 'chat':
-                        appendChatMessage(data.data);
-                        break;
-                    case 'stats':
-                        updateStats(data.data);
-                        break;
-                    case 'status':
-                        updateStatus(data);
-                        break;
-                    case 'error':
-                        console.error('Error:', data.error);
-                        break;
-                }
-            };
+                ws.onclose = () => {
+                    document.getElementById('connection-status').className = 'disconnected';
+                    document.getElementById('connection-status').textContent = 'Disconnected';
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    switch (data.type) {
+                        case 'chat':
+                            appendChatMessage(data.data);
+                            break;
+                        case 'stats':
+                            updateStats(data.data);
+                            break;
+                        case 'status':
+                            updateStatus(data);
+                            break;
+                        case 'error':
+                            console.error('Error:', data.error);
+                            break;
+                    }
+                };
+            } catch (error) {
+                console.error('Connection setup error:', error);
+            }
         }
 
         function disconnect() {

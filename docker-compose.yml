@@ -43,10 +43,12 @@ services:
       - "traefik.http.routers.microservice-livechat-http.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
-      - "traefik.http.middlewares.websocket-headers.headers.customRequestHeaders.Connection=Upgrade"
-      - "traefik.http.middlewares.websocket-headers.headers.customRequestHeaders.Upgrade=websocket"
-      - "traefik.http.middlewares.websocket-headers.headers.customResponseHeaders.Sec-WebSocket-Accept=*"
-      - "traefik.http.middlewares.websocket-headers.headers.customResponseHeaders.Sec-WebSocket-Version=13"
+      - "traefik.http.middlewares.websocket.headers.customRequestHeaders.Connection=upgrade"
+      - "traefik.http.middlewares.websocket.headers.customRequestHeaders.Upgrade=websocket"
+      - "traefik.http.middlewares.websocket.headers.customResponseHeaders.Access-Control-Allow-Origin=*"
+      - "traefik.http.middlewares.websocket.headers.customResponseHeaders.Access-Control-Allow-Methods=GET,OPTIONS"
+      - "traefik.http.middlewares.websocket.headers.customResponseHeaders.Access-Control-Allow-Headers=*"
+      - "traefik.http.middlewares.websocket.headers.customResponseHeaders.Access-Control-Allow-Credentials=true"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Frame-Options=DENY"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-XSS-Protection=1; mode=block"
@@ -60,8 +62,8 @@ services:
       - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.cors.headers.addvaryheader=true"
       - "traefik.http.middlewares.circuit-breaker.circuitbreaker.expression=NetworkErrorRatio() > 0.20"
-      - "traefik.http.routers.microservice-livechat.middlewares=security-headers,websocket-headers,ratelimit,compress,cors,circuit-breaker"
-      - "traefik.http.routers.microservice-livechat-http.middlewares=security-headers,websocket-headers,ratelimit,compress,cors,circuit-breaker,https-redirect"
+      - "traefik.http.routers.microservice-livechat.middlewares=security-headers,websocket,ratelimit,compress,cors,circuit-breaker"
+      - "traefik.http.routers.microservice-livechat-http.middlewares=security-headers,websocket,ratelimit,compress,cors,circuit-breaker,https-redirect"
     networks:
       - web
     expose:
