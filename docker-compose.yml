@@ -34,33 +34,42 @@ services:
     depends_on:
       - redis
     labels:
+      # WebSocket route
       - "traefik.http.routers.microservice-livechat-ws.rule=Host(`wschat.oristarium.com`)"
       - "traefik.http.routers.microservice-livechat-ws.entrypoints=https"
       - "traefik.http.routers.microservice-livechat-ws.tls.certresolver=myresolver"
       - "traefik.http.routers.microservice-livechat-ws.middlewares=websocket"
       
+      # Web route for /test
       - "traefik.http.routers.microservice-livechat-web.rule=Host(`wschat.oristarium.com`) && PathPrefix(`/test`)"
       - "traefik.http.routers.microservice-livechat-web.entrypoints=https"
       - "traefik.http.routers.microservice-livechat-web.tls.certresolver=myresolver"
       - "traefik.http.routers.microservice-livechat-web.middlewares=security-headers,compress"
       
+      # HTTP to HTTPS redirect
       - "traefik.http.routers.microservice-livechat-http.rule=Host(`wschat.oristarium.com`)"
       - "traefik.http.routers.microservice-livechat-http.entrypoints=http"
       - "traefik.http.routers.microservice-livechat-http.middlewares=https-redirect"
       
+      # WebSocket middleware
       - "traefik.http.middlewares.websocket.headers.customRequestHeaders.Connection=upgrade"
       - "traefik.http.middlewares.websocket.headers.customRequestHeaders.Upgrade=websocket"
       
+      # Security headers
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Frame-Options=DENY"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-XSS-Protection=1; mode=block"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Referrer-Policy=strict-origin-when-cross-origin"
-      
       - "traefik.http.middlewares.security-headers.headers.permissionsPolicy=geolocation=self"
       
+      # Compression middleware
+      - "traefik.http.middlewares.compress.compress=true"
+      
+      # HTTPS redirect middleware
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
       
+      # Service configuration
       - "traefik.http.services.microservice-livechat.loadbalancer.server.port=3000"
     networks:
       - web
