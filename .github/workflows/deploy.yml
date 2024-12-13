@@ -54,7 +54,9 @@ jobs:
           ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
             cd /var/www/microservice-livechat || (sudo mkdir -p /var/www/microservice-livechat && cd /var/www/microservice-livechat) &&
             sudo git init &&
-            sudo git remote add origin https://ghp_${PAT_TOKEN}@github.com/roffidaijoubu/microservice-livechat.git || true &&
+            sudo git remote set-url origin https://ghp_${PAT_TOKEN}@github.com/roffidaijoubu/microservice-livechat.git || sudo git remote add origin https://ghp_${PAT_TOKEN}@github.com/roffidaijoubu/microservice-livechat.git &&
+            sudo git config --global credential.helper store &&
+            echo "https://ghp_${PAT_TOKEN}@github.com" > ~/.git-credentials &&
             sudo git fetch origin &&
             sudo git reset --hard origin/main
           "
