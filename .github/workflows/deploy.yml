@@ -65,18 +65,6 @@ jobs:
           ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
             cd /var/www/microservice-livechat &&
             sudo docker-compose down &&
+            sudo docker-compose pull &&
             sudo docker-compose up -d
           "
-
-      # Step 2: Make sure the new image is running
-      - name: Make sure the new image is running
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /var/www/microservice-livechat
-            docker-compose down
-            docker-compose pull
-            docker-compose up -d
