@@ -1,15 +1,18 @@
 # YouTube Live Chat WebSocket Microservice
 
-A WebSocket-based microservice that provides real-time YouTube live chat messages without requiring the YouTube API.
+A WebSocket-based microservice that provides real-time YouTube live chat messages and statistics without requiring the YouTube API.
 
 ## Features
 
 - WebSocket endpoints for real-time chat messages
+- Real-time chat statistics tracking
 - Support for multiple YouTube channels simultaneously
+- Support for multiple clients per channel
 - Automatic cleanup of inactive streams
 - Resource management (stops watching when no clients are connected)
 - Error handling and status updates
 - Health check endpoint
+- Redis support for persistent statistics (optional)
 
 ## Local Development
 
@@ -22,12 +25,33 @@ npm install
 ### Running Locally
 
 ```bash
+# Without Redis (uses in-memory storage)
 node server.js
+
+# With Redis
+REDIS_URL=redis://localhost:6379 STATS_STORAGE=redis node server.js
+```
+
+### Docker Compose
+
+```yaml
+services:
+  microservice-livechat:
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - STATS_STORAGE=redis
+    # ... other config
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
 ```
 
 ## WebSocket Protocol
 
-Note: Each WebSocket connection can only be subscribed to one live chat at a time. Subscribing to a new chat will automatically unsubscribe from the current one.
+Note: Each WebSocket connection can be subscribed to one live chat at a time. Multiple clients can subscribe to the same chat.
 
 ### Client Messages
 
@@ -45,6 +69,13 @@ Note: Each WebSocket connection can only be subscribed to one live chat at a tim
 ```javascript
 {
     "type": "unsubscribe"
+}
+```
+
+3. Request current stats:
+```javascript
+{
+    "type": "get_stats"
 }
 ```
 
@@ -74,6 +105,8 @@ Common error codes:
 - `STREAM_NOT_LIVE`: The stream is not currently live
 - `STREAM_ENDED`: The stream has ended
 - `INVALID_MESSAGE_TYPE`: Unknown message type received
+- `NO_ACTIVE_CHAT`: No chat is currently subscribed
+- `STREAM_NOT_FOUND`: Stream data not found
 
 3. Chat Messages:
 ```javascript
@@ -139,6 +172,30 @@ Common error codes:
 }
 ```
 
+4. Stats Updates:
+```javascript
+{
+    "type": "stats",
+    "data": {
+        "uniqueUsers": [
+            {
+                "id": string,
+                "username": string,
+                "display_name": string,
+                "roles": {
+                    "broadcaster": boolean,
+                    "moderator": boolean,
+                    "subscriber": boolean,
+                    "verified": boolean
+                },
+                "messageCount": number
+            }
+        ],
+        "totalMessages": number
+    }
+}
+```
+
 ## Example Usage
 
 ```javascript
@@ -150,25 +207,6 @@ ws.send(JSON.stringify({
     identifier: '@channelname'
 }));
 
-// Or subscribe using channel ID
-ws.send(JSON.stringify({
-    type: 'subscribe',
-    identifier: 'UCxxxxxxxxxxxxxxxx',
-    identifierType: 'channelId'
-}));
-
-// Or subscribe to specific livestream
-ws.send(JSON.stringify({
-    type: 'subscribe',
-    identifier: 'xxxxxxxxxxxxxx',
-    identifierType: 'liveId'
-}));
-
-// Unsubscribe when done
-ws.send(JSON.stringify({
-    type: 'unsubscribe'
-}));
-
 // Handle incoming messages
 ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
@@ -176,6 +214,9 @@ ws.onmessage = (event) => {
     switch (message.type) {
         case 'chat':
             console.log('New chat message:', message.data);
+            break;
+        case 'stats':
+            console.log('Stats update:', message.data);
             break;
         case 'status':
             console.log('Status update:', message.status);
@@ -186,6 +227,14 @@ ws.onmessage = (event) => {
     }
 };
 ```
+
+## Test Interface
+
+The service provides a test interface at `/test` that allows you to:
+- Connect to different channels
+- View live chat messages with badges and emotes
+- Monitor chat statistics in real-time
+- View top chatters and message counts
 
 ## Health Check
 

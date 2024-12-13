@@ -28,6 +28,11 @@ services:
 
   microservice-livechat:
     image: roffidaijoubu/microservice-livechat:latest
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - STATS_STORAGE=redis
+    depends_on:
+      - redis
     labels:
       - "traefik.http.routers.microservice-livechat.rule=Host(`wschat.oristarium.com`)"
       - "traefik.http.services.microservice-livechat.loadbalancer.server.port=3000"

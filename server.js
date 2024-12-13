@@ -13,28 +13,34 @@ const wss = new WebSocketServer({ server });
 const activeStreams = new Map();
 
 // Cleanup function for inactive streams
-function cleanupStream(channelId, sendEndedMessage = true) {
+async function cleanupStream(channelId, sendEndedMessage = true) {
     const streamData = activeStreams.get(channelId);
     if (streamData) {
         // Remove from map first to prevent duplicate cleanup
         activeStreams.delete(channelId);
         
-        streamData.chatHandler.stop();
-        
-        // Only send ended message if requested and not during unsubscribe
-        if (sendEndedMessage) {
-            streamData.clients.forEach(client => {
-                if (client.readyState === 1) {
-                    client.send(JSON.stringify({ 
-                        type: SERVER_MESSAGE_TYPES.ERROR, 
-                        error: 'Stream has ended',
-                        code: 'STREAM_ENDED'
-                    }));
-                }
-            });
+        try {
+            // Properly cleanup the chat handler
+            await streamData.chatHandler.cleanup();
+            streamData.chatHandler.stop();
+            
+            // Only send ended message if requested and not during unsubscribe
+            if (sendEndedMessage) {
+                streamData.clients.forEach(client => {
+                    if (client.readyState === 1) {
+                        client.send(JSON.stringify({ 
+                            type: SERVER_MESSAGE_TYPES.ERROR, 
+                            error: 'Stream has ended',
+                            code: 'STREAM_ENDED'
+                        }));
+                    }
+                });
+            }
+            
+            console.log(`Cleaned up stream for channel ${channelId}`);
+        } catch (error) {
+            console.error(`Error cleaning up stream ${channelId}:`, error);
         }
-        
-        console.log(`Cleaned up stream for channel ${channelId}`);
     }
 }
 
@@ -51,9 +57,16 @@ wss.on('connection', (ws) => {
             
             switch (data.type) {
                 case CLIENT_MESSAGE_TYPES.SUBSCRIBE:
-                    // Clean up previous subscription if it exists
+                    // Clean up previous subscription for this client
                     if (currentChannelId) {
-                        cleanupStream(currentChannelId, false);
+                        const prevStreamData = activeStreams.get(currentChannelId);
+                        if (prevStreamData) {
+                            prevStreamData.clients.delete(ws);
+                            // Only cleanup if no clients are left
+                            if (prevStreamData.clients.size === 0) {
+                                cleanupStream(currentChannelId, false);
+                            }
+                        }
                     }
 
                     const identifier = data.identifier;
@@ -162,14 +175,22 @@ wss.on('connection', (ws) => {
 
                 case CLIENT_MESSAGE_TYPES.UNSUBSCRIBE:
                     if (currentChannelId) {
-                        // Send unsubscribe status first
-                        ws.send(JSON.stringify({ 
-                            type: SERVER_MESSAGE_TYPES.STATUS, 
-                            status: 'unsubscribed' 
-                        }));
-                        
-                        // Then cleanup without sending end message
-                        cleanupStream(currentChannelId, false);
+                        const streamData = activeStreams.get(currentChannelId);
+                        if (streamData) {
+                            // Remove this client from the stream
+                            streamData.clients.delete(ws);
+                            
+                            // Send unsubscribe status to this client
+                            ws.send(JSON.stringify({ 
+                                type: SERVER_MESSAGE_TYPES.STATUS, 
+                                status: 'unsubscribed' 
+                            }));
+
+                            // Only cleanup if no clients are left
+                            if (streamData.clients.size === 0) {
+                                cleanupStream(currentChannelId, false);
+                            }
+                        }
                         currentChannelId = null;
                     }
                     break;
@@ -235,10 +256,10 @@ app.get('/health', (req, res) => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
     console.log('SIGTERM received. Cleaning up...');
     for (const [channelId] of activeStreams) {
-        cleanupStream(channelId);
+        await cleanupStream(channelId);
     }
     server.close(() => {
         console.log('Server closed');
