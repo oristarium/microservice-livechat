@@ -170,6 +170,21 @@ wss.on('connection', (ws) => {
                         });
                     });
 
+                    // Add handler for stream end
+                    liveChat.on('end', () => {
+                        streamData.clients.forEach(client => {
+                            if (client.readyState === 1) {
+                                client.send(JSON.stringify({ 
+                                    type: 'error', 
+                                    error: 'Stream has ended',
+                                    code: 'STREAM_ENDED'
+                                }));
+                            }
+                        });
+                        
+                        cleanupStream(identifier);
+                    });
+
                     liveChat.on('chat', (chatItem) => {
                         const transformedMessage = transformYouTubeMessage(chatItem);
                         const message = { type: 'chat', data: transformedMessage };
@@ -189,13 +204,28 @@ wss.on('connection', (ws) => {
                         });
                     });
 
-                    // Start the LiveChat
-                    const ok = await liveChat.start();
-                    if (!ok) {
-                        ws.send(JSON.stringify({ type: 'error', error: 'Failed to start LiveChat' }));
+                    // Try to start the LiveChat
+                    try {
+                        const ok = await liveChat.start();
+                        if (!ok) {
+                            ws.send(JSON.stringify({ 
+                                type: 'error', 
+                                error: 'Stream is not live',
+                                code: 'STREAM_NOT_LIVE'
+                            }));
+                            cleanupStream(identifier);
+                            return;
+                        }
+                        streamData.isActive = true;
+                    } catch (error) {
+                        ws.send(JSON.stringify({ 
+                            type: 'error', 
+                            error: 'Failed to start LiveChat',
+                            details: error.message
+                        }));
+                        cleanupStream(identifier);
                         return;
                     }
-                    streamData.isActive = true;
                 }
 
                 // Add client to the stream's client list
