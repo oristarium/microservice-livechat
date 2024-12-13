@@ -7,11 +7,17 @@
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["youtube", "chat", "websocket", "microservice"],
+  "keywords": [
+    "youtube",
+    "chat",
+    "websocket",
+    "microservice"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.21.2",
+    "ioredis": "^5.3.2",
     "ws": "^8.18.0",
     "youtube-chat": "^2.2.0"
   }

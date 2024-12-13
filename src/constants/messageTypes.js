@@ -3,7 +3,8 @@
  */
 const CLIENT_MESSAGE_TYPES = {
     SUBSCRIBE: 'subscribe',    // Subscribe to a livestream chat
-    UNSUBSCRIBE: 'unsubscribe' // Unsubscribe from current livestream chat
+    UNSUBSCRIBE: 'unsubscribe', // Unsubscribe from current livestream chat
+    GET_STATS: 'get_stats'    // Request current chat statistics
 };
 
 /**
@@ -12,7 +13,8 @@ const CLIENT_MESSAGE_TYPES = {
 const SERVER_MESSAGE_TYPES = {
     STATUS: 'status',  // Server status updates (started, subscribed, etc)
     CHAT: 'chat',     // Chat messages from the livestream
-    ERROR: 'error'    // Error messages
+    ERROR: 'error',   // Error messages
+    STATS: 'stats'    // Chat statistics updates
 };
 
 module.exports = {

@@ -3,6 +3,7 @@ const { WebSocketServer } = require('ws');
 const http = require('http');
 const { YouTubeChatHandler } = require('./src/platforms/youtube');
 const { CLIENT_MESSAGE_TYPES, SERVER_MESSAGE_TYPES } = require('./src/constants/messageTypes');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -37,6 +38,9 @@ function cleanupStream(channelId, sendEndedMessage = true) {
     }
 }
 
+// Add these routes before the WebSocket setup
+app.use('/test', express.static(path.join(__dirname, 'public')));
+
 // Handle WebSocket connections
 wss.on('connection', (ws) => {
     let currentChannelId = null;
@@ -52,11 +56,10 @@ wss.on('connection', (ws) => {
                         cleanupStream(currentChannelId, false);
                     }
 
-                    const { 
-                        identifier, 
-                        identifierType = 'username',
-                        platform = 'youtube' 
-                    } = data;
+                    const identifier = data.identifier;
+                    const identifierType = data.identifierType || 'username';
+                    const platform = data.platform || 'youtube';
+                    
                     currentChannelId = identifier;
 
                     let streamData = activeStreams.get(identifier);
@@ -117,6 +120,17 @@ wss.on('connection', (ws) => {
                                             }));
                                         }
                                     });
+                                },
+                                // onStatsUpdate
+                                (stats) => {
+                                    streamData.clients.forEach(client => {
+                                        if (client.readyState === 1) {
+                                            client.send(JSON.stringify({
+                                                type: SERVER_MESSAGE_TYPES.STATS,
+                                                data: stats
+                                            }));
+                                        }
+                                    });
                                 }
                             );
 
@@ -157,6 +171,30 @@ wss.on('connection', (ws) => {
                         // Then cleanup without sending end message
                         cleanupStream(currentChannelId, false);
                         currentChannelId = null;
+                    }
+                    break;
+
+                case CLIENT_MESSAGE_TYPES.GET_STATS:
+                    if (currentChannelId) {
+                        const streamData = activeStreams.get(currentChannelId);
+                        if (streamData) {
+                            ws.send(JSON.stringify({
+                                type: SERVER_MESSAGE_TYPES.STATS,
+                                data: streamData.chatHandler.getCurrentStats()
+                            }));
+                        } else {
+                            ws.send(JSON.stringify({
+                                type: SERVER_MESSAGE_TYPES.ERROR,
+                                error: "Stream data not found",
+                                code: "STREAM_NOT_FOUND"
+                            }));
+                        }
+                    } else {
+                        ws.send(JSON.stringify({
+                            type: SERVER_MESSAGE_TYPES.ERROR,
+                            error: "No active chat connection",
+                            code: "NO_ACTIVE_CHAT"
+                        }));
                     }
                     break;
 

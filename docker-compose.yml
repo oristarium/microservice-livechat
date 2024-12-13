@@ -73,6 +73,23 @@ services:
         max-file: "3"
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
+    networks:
+      - web
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 256M
+    restart: unless-stopped
+
 networks:
   web:
     external: true
+
+volumes:
+  redis-data:

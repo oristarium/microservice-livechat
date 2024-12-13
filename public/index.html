@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveChat Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        #chat-container {
+            height: 600px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        #stats-container {
+            height: 600px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .chat-message {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .author-name {
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .message-content {
+            margin-left: 5px;
+        }
+        .status {
+            color: #666;
+            font-style: italic;
+        }
+        .controls {
+            grid-column: 1 / -1;
+            margin-bottom: 20px;
+        }
+        #connection-status {
+            margin-top: 10px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .connected {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 4px;
+            margin-right: 4px;
+            border-radius: 3px;
+            font-size: 12px;
+            background: #e0e0e0;
+        }
+        .badge.mod { background: #2196F3; color: white; }
+        .badge.broadcaster { background: #f44336; color: white; }
+        .badge.subscriber { background: #4CAF50; color: white; }
+        .emote {
+            display: inline-block;
+            vertical-align: middle;
+            height: 28px;
+            margin: -4px 1px;
+        }
+        
+        .emote[data-custom="true"] {
+            height: 32px;  /* Custom emotes might be bigger */
+        }
+        
+        .message-content {
+            margin-left: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .text {
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <input type="text" id="channel-id" placeholder="Channel ID/Username" value="holoen_ceciliaimmergreen">
+        <select id="identifier-type">
+            <option value="username">Username</option>
+            <option value="channelId">Channel ID</option>
+        </select>
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <div id="connection-status" class="disconnected">Disconnected</div>
+    </div>
+
+    <div id="chat-container"></div>
+    <div id="stats-container">
+        <h3>Chat Statistics</h3>
+        <div id="stats-content"></div>
+    </div>
+
+    <script>
+        let ws;
+        let statsInterval;
+
+        function connect() {
+            const channelId = document.getElementById('channel-id').value;
+            const identifierType = document.getElementById('identifier-type').value;
+            
+            // Use secure WebSocket if page is served over HTTPS
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+            
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                document.getElementById('connection-status').className = 'connected';
+                document.getElementById('connection-status').textContent = 'Connected';
+                
+                // Subscribe to channel
+                ws.send(JSON.stringify({
+                    type: 'subscribe',
+                    identifier: channelId,
+                    identifierType: identifierType,
+                    platform: 'youtube'
+                }));
+            };
+
+            ws.onclose = () => {
+                document.getElementById('connection-status').className = 'disconnected';
+                document.getElementById('connection-status').textContent = 'Disconnected';
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                switch (data.type) {
+                    case 'chat':
+                        appendChatMessage(data.data);
+                        break;
+                    case 'stats':
+                        updateStats(data.data);
+                        break;
+                    case 'status':
+                        updateStatus(data);
+                        break;
+                    case 'error':
+                        console.error('Error:', data.error);
+                        break;
+                }
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.send(JSON.stringify({ type: 'unsubscribe' }));
+                ws.close();
+            }
+        }
+
+        function appendChatMessage(message) {
+            const container = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+
+            // Create badges
+            const badgesHtml = [];
+            if (message.data.author.roles.broadcaster) badgesHtml.push('<span class="badge broadcaster">Broadcaster</span>');
+            if (message.data.author.roles.moderator) badgesHtml.push('<span class="badge mod">Mod</span>');
+            if (message.data.author.roles.subscriber) badgesHtml.push('<span class="badge subscriber">Member</span>');
+
+            // Create message content from elements
+            const contentHtml = message.data.content.elements.map(element => {
+                if (element.type === 'text') {
+                    return `<span class="text">${element.value}</span>`;
+                } else if (element.type === 'emote') {
+                    return `<img 
+                        class="emote" 
+                        src="${element.metadata.url}" 
+                        alt="${element.metadata.alt}" 
+                        title="${element.metadata.alt}"
+                        ${element.metadata.is_custom ? 'data-custom="true"' : ''}
+                    >`;
+                }
+                return '';
+            }).join('');
+
+            messageDiv.innerHTML = `
+                ${badgesHtml.join('')}
+                <span class="author-name">${message.data.author.display_name}</span>
+                <span class="message-content">${contentHtml}</span>
+            `;
+
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateStats(stats) {
+            const container = document.getElementById('stats-content');
+            const uniqueUsers = stats.uniqueUsers;
+            
+            let html = `
+                <p>Total Messages: ${stats.totalMessages}</p>
+                <p>Unique Users: ${uniqueUsers.length}</p>
+                <h4>Top Chatters:</h4>
+                <ul>
+            `;
+
+            // Sort users by message count
+            uniqueUsers.sort((a, b) => b.messageCount - a.messageCount);
+
+            // Show top 10 users
+            uniqueUsers.slice(0, 10).forEach(user => {
+                html += `
+                    <li>
+                        ${user.display_name} - ${user.messageCount} messages
+                        ${user.roles.broadcaster ? '👑' : ''}
+                        ${user.roles.moderator ? '🛡️' : ''}
+                        ${user.roles.subscriber ? '⭐' : ''}
+                    </li>
+                `;
+            });
+
+            html += '</ul>';
+            container.innerHTML = html;
+        }
+
+        function updateStatus(status) {
+            const container = document.getElementById('connection-status');
+            container.textContent = `Status: ${status.status}`;
+            if (status.status === 'started' || status.status === 'subscribed') {
+                container.className = 'connected';
+            }
+        }
+    </script>
+</body>
+</html> 
