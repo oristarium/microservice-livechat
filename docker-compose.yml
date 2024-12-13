@@ -34,40 +34,34 @@ services:
     depends_on:
       - redis
     labels:
-      - "traefik.http.routers.microservice-livechat.rule=Host(`wschat.oristarium.com`)"
-      - "traefik.http.services.microservice-livechat.loadbalancer.server.port=3000"
-      - "traefik.http.routers.microservice-livechat.entrypoints=https"
-      - "traefik.http.routers.microservice-livechat.tls.certresolver=myresolver"
+      - "traefik.http.routers.microservice-livechat-ws.rule=Host(`wschat.oristarium.com`)"
+      - "traefik.http.routers.microservice-livechat-ws.entrypoints=https"
+      - "traefik.http.routers.microservice-livechat-ws.tls.certresolver=myresolver"
+      - "traefik.http.routers.microservice-livechat-ws.middlewares=websocket"
+      
+      - "traefik.http.routers.microservice-livechat-web.rule=Host(`wschat.oristarium.com`) && PathPrefix(`/test`)"
+      - "traefik.http.routers.microservice-livechat-web.entrypoints=https"
+      - "traefik.http.routers.microservice-livechat-web.tls.certresolver=myresolver"
+      - "traefik.http.routers.microservice-livechat-web.middlewares=security-headers,compress"
+      
       - "traefik.http.routers.microservice-livechat-http.rule=Host(`wschat.oristarium.com`)"
       - "traefik.http.routers.microservice-livechat-http.entrypoints=http"
       - "traefik.http.routers.microservice-livechat-http.middlewares=https-redirect"
-      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+      
       - "traefik.http.middlewares.websocket.headers.customRequestHeaders.Connection=upgrade"
       - "traefik.http.middlewares.websocket.headers.customRequestHeaders.Upgrade=websocket"
-      - "traefik.http.middlewares.websocket.headers.customResponseHeaders.Access-Control-Allow-Origin=*"
-      - "traefik.http.middlewares.websocket.headers.customResponseHeaders.Access-Control-Allow-Methods=GET,OPTIONS"
-      - "traefik.http.middlewares.websocket.headers.customResponseHeaders.Access-Control-Allow-Headers=*"
-      - "traefik.http.middlewares.websocket.headers.customResponseHeaders.Access-Control-Allow-Credentials=true"
+      
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Frame-Options=DENY"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-XSS-Protection=1; mode=block"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Referrer-Policy=strict-origin-when-cross-origin"
-      - "traefik.http.middlewares.security-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
-      - "traefik.http.middlewares.ratelimit.ratelimit.average=100"
-      - "traefik.http.middlewares.ratelimit.ratelimit.burst=50"
-      - "traefik.http.middlewares.compress.compress=true"
-      - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=GET,OPTIONS"
-      - "traefik.http.middlewares.cors.headers.accesscontrolalloworiginlist=${CORS_ORIGINS:-https://*.oristarium.com,http://localhost:*,ws://localhost:*}"
-      - "traefik.http.middlewares.cors.headers.accesscontrolallowheaders=*"
-      - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
-      - "traefik.http.middlewares.cors.headers.addvaryheader=true"
-      - "traefik.http.middlewares.circuit-breaker.circuitbreaker.expression=NetworkErrorRatio() > 0.20"
-      - "traefik.http.routers.microservice-livechat.middlewares=security-headers,websocket,ratelimit,compress,cors,circuit-breaker"
-      - "traefik.http.routers.microservice-livechat-http.middlewares=security-headers,websocket,ratelimit,compress,cors,circuit-breaker,https-redirect"
-      - "traefik.http.middlewares.test-path.stripprefix.prefixes=/test"
-      - "traefik.http.routers.microservice-livechat-test.rule=Host(`wschat.oristarium.com`) && PathPrefix(`/test`)"
-      - "traefik.http.routers.microservice-livechat-test.middlewares=test-path"
+      
+      - "traefik.http.middlewares.security-headers.headers.permissionsPolicy=geolocation=self"
+      
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+      
+      - "traefik.http.services.microservice-livechat.loadbalancer.server.port=3000"
     networks:
       - web
     expose:
