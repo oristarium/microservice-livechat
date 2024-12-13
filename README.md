@@ -125,43 +125,148 @@ Subscribe to a channel:
 Chat message format:
 ```javascript
 {
-    type: 'chat',
-    data: {
-        author: {
-            name: string,
-            channelId: string,
-            thumbnail: {
-                url: string,
-                alt: string
+    "type": "chat",
+    "platform": "youtube"|"twitch"|"tiktok",
+    "timestamp": "2024-03-20T12:34:56.789Z",
+    "message_id": "unique-message-id",
+    "room_id": "stream-or-channel-id",
+    "data": {
+        "author": {
+            "id": "user-unique-id",
+            "username": "username",
+            "display_name": "Display Name",
+            "avatar_url": "https://example.com/avatar.jpg",
+            "roles": {
+                "broadcaster": false,
+                "moderator": true,
+                "subscriber": true,
+                "verified": false
             },
-            badge?: {
-                thumbnail: {
-                    url: string,
-                    alt: string
+            "badges": [
+                {
+                    "type": "subscriber"|"moderator"|"verified"|"custom",
+                    "label": "Member (1 year)",
+                    "image_url": "https://example.com/badge.png"
+                }
+            ]
+        },
+        "content": {
+            "raw": "Hello 😊 world! :custom-emote:",
+            "formatted": "Hello 😊 world! :custom-emote:",
+            "sanitized": "Hello world!",
+            "elements": [
+                {
+                    "type": "text",
+                    "value": "Hello ",
+                    "position": [0, 6]
                 },
-                label: string
-            }
+                {
+                    "type": "emote",
+                    "value": "😊",
+                    "position": [6, 7],
+                    "metadata": {
+                        "url": "https://example.com/emote.png",
+                        "alt": "smiling face",
+                        "is_custom": false
+                    }
+                },
+                {
+                    "type": "text",
+                    "value": " world! ",
+                    "position": [7, 14]
+                },
+                {
+                    "type": "emote",
+                    "value": "custom-emote",
+                    "position": [14, 26],
+                    "metadata": {
+                        "url": "https://example.com/custom-emote.png",
+                        "alt": "custom emote",
+                        "is_custom": true
+                    }
+                }
+            ]
         },
-        message: Array<{
-            text?: string,
-            emojiText?: string,
-            url?: string,
-            alt?: string,
-            isCustomEmoji?: boolean
-        }>,
-        superchat?: {
-            amount: string,
-            color: string,
-            sticker?: {
-                url: string,
-                alt: string
+        "metadata": {
+            "type": "chat"|"super_chat"|"subscription"|"follow",
+            "monetary_data": {
+                "amount": "10.00",
+                "currency": "USD",
+                "formatted": "$10.00",
+                "color": "#FF0000"
+            },
+            "sticker": {
+                "url": "https://example.com/sticker.png",
+                "alt": "sticker description"
             }
+        }
+    }
+}
+```
+
+Example chat message response:
+```javascript
+{
+    "type": "chat",
+    "platform": "youtube",
+    "timestamp": "2024-03-20T12:34:56.789Z",
+    "message_id": "abc123xyz",
+    "room_id": "UCxxxxxxxxxxxxxxx",
+    "data": {
+        "author": {
+            "id": "UCyyyyyyyyyyyy",
+            "username": "user123",
+            "display_name": "Cool User",
+            "avatar_url": "https://yt3.ggpht.com/avatar123",
+            "roles": {
+                "broadcaster": false,
+                "moderator": false,
+                "subscriber": true,
+                "verified": false
+            },
+            "badges": [
+                {
+                    "type": "subscriber",
+                    "label": "Member (2 years)",
+                    "image_url": "https://yt3.ggpht.com/badge123"
+                }
+            ]
         },
-        isMembership: boolean,
-        isVerified: boolean,
-        isOwner: boolean,
-        isModerator: boolean,
-        timestamp: Date
+        "content": {
+            "raw": "Hello everyone! 👋 :heart-emoji: Great stream!",
+            "formatted": "Hello everyone! 👋 :heart-emoji: Great stream!",
+            "sanitized": "Hello everyone! Great stream!",
+            "elements": [
+                {
+                    "type": "text",
+                    "value": "Hello everyone! ",
+                    "position": [0, 14]
+                },
+                {
+                    "type": "emote",
+                    "value": "👋",
+                    "position": [14, 15]
+                },
+                {
+                    "type": "emote",
+                    "value": "heart-emoji",
+                    "position": [16, 27],
+                    "metadata": {
+                        "url": "https://yt3.ggpht.com/heart-emoji.png",
+                        "alt": "heart emoji",
+                        "is_custom": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "value": " Great stream!",
+                    "position": [27, 40]
+                }
+            ]
+        },
+        "metadata": {
+            "type": "chat"
+        }
     }
 }
 ```
@@ -187,24 +292,3 @@ Error message format:
 ## Health Check
 
 GET `/health` - Returns the status of the service and number of active streams.
-
-## Notes
-
-- The service automatically cleans up resources when clients disconnect
-- No YouTube API key required
-- Supports multiple simultaneous connections to different channels
-- For production deployment, consider setting up Nginx as a reverse proxy with SSL
-- Make sure to configure your firewall to allow traffic on port 3000
-
-## Microservice Project
-
-## Deployment Instructions
-
-### Prerequisites
-- Ubuntu 22.04
-- Docker
-- Docker Compose
-
-### Deployment Steps
-
-1. Clone the repository: 

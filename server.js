@@ -20,6 +20,105 @@ function cleanupStream(channelId) {
     }
 }
 
+// Add this helper function
+function getSanitizedMessage(messageArray) {
+    return messageArray
+        .filter(element => element.text) // Only keep text elements
+        .map(element => element.text)
+        .join('');
+}
+
+// Update the transformYouTubeMessage function to include sanitized content
+function transformYouTubeMessage(ytMessage) {
+    return {
+        type: 'chat',
+        platform: 'youtube',
+        timestamp: ytMessage.timestamp.toISOString(),
+        message_id: ytMessage.id || crypto.randomUUID(),
+        room_id: ytMessage.channelId,
+        data: {
+            author: {
+                id: ytMessage.author.channelId,
+                username: ytMessage.author.name,
+                display_name: ytMessage.author.name,
+                avatar_url: ytMessage.author.thumbnail?.url,
+                roles: {
+                    broadcaster: ytMessage.isOwner,
+                    moderator: ytMessage.isModerator,
+                    subscriber: ytMessage.isMembership,
+                    verified: ytMessage.isVerified
+                },
+                badges: transformBadges(ytMessage.author.badge)
+            },
+            content: {
+                raw: getRawMessage(ytMessage.message),
+                formatted: getFormattedMessage(ytMessage.message),
+                sanitized: getSanitizedMessage(ytMessage.message),
+                elements: transformMessageElements(ytMessage.message)
+            },
+            metadata: {
+                type: ytMessage.superchat ? 'super_chat' : 'chat',
+                monetary_data: ytMessage.superchat ? {
+                    amount: ytMessage.superchat.amount,
+                    formatted: ytMessage.superchat.amount,
+                    color: ytMessage.superchat.color
+                } : null,
+                sticker: ytMessage.superchat?.sticker ? {
+                    url: ytMessage.superchat.sticker.url,
+                    alt: ytMessage.superchat.sticker.alt
+                } : null
+            }
+        }
+    };
+}
+
+// Helper functions
+function transformBadges(badge) {
+    if (!badge) return [];
+    return [{
+        type: 'custom',
+        label: badge.label,
+        image_url: badge.thumbnail.url
+    }];
+}
+
+function getRawMessage(messageArray) {
+    return messageArray.map(element => 
+        element.text || element.emojiText || ''
+    ).join('');
+}
+
+function getFormattedMessage(messageArray) {
+    return messageArray.map(element => {
+        if (element.text) return element.text;
+        if (element.emojiText) return `:${element.emojiText}:`;
+        return '';
+    }).join('');
+}
+
+function transformMessageElements(message) {
+    let position = 0;
+    return message.map(element => {
+        const length = element.text?.length || element.emojiText?.length || 0;
+        const result = {
+            type: element.text ? 'text' : 'emote',
+            value: element.text || element.emojiText,
+            position: [position, position + length]
+        };
+        
+        if (element.emojiText) {
+            result.metadata = {
+                url: element.url,
+                alt: element.alt,
+                is_custom: element.isCustomEmoji
+            };
+        }
+        
+        position += length;
+        return result;
+    });
+}
+
 // Handle WebSocket connections
 wss.on('connection', (ws) => {
     let currentChannelId = null;
@@ -72,7 +171,8 @@ wss.on('connection', (ws) => {
                     });
 
                     liveChat.on('chat', (chatItem) => {
-                        const message = { type: 'chat', data: chatItem };
+                        const transformedMessage = transformYouTubeMessage(chatItem);
+                        const message = { type: 'chat', data: transformedMessage };
                         streamData.clients.forEach(client => {
                             if (client.readyState === 1) {
                                 client.send(JSON.stringify(message));
