@@ -71,6 +71,12 @@ services:
       
       # Service configuration
       - "traefik.http.services.microservice-livechat.loadbalancer.server.port=3000"
+      
+      # Health check route
+      - "traefik.http.routers.microservice-livechat-health.rule=Host(`wschat.oristarium.com`) && PathPrefix(`/health`)"
+      - "traefik.http.routers.microservice-livechat-health.entrypoints=https"
+      - "traefik.http.routers.microservice-livechat-health.tls.certresolver=myresolver"
+      - "traefik.http.routers.microservice-livechat-health.middlewares=security-headers"
     networks:
       - web
     expose:
