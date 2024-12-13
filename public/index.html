@@ -5,60 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LiveChat Test</title>
     <style>
+        /* Layout: Two-column grid for chat and stats */
         body {
             font-family: Arial, sans-serif;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 2fr 1fr; /* Chat takes 2/3, stats takes 1/3 */
             gap: 20px;
         }
+
+        /* Chat container styles */
         #chat-container {
             height: 600px;
             overflow-y: auto;
             border: 1px solid #ccc;
             padding: 10px;
         }
+
+        /* Stats container styles */
         #stats-container {
             height: 600px;
             overflow-y: auto;
             border: 1px solid #ccc;
             padding: 10px;
         }
+
+        /* Message styling */
         .chat-message {
             margin-bottom: 10px;
             padding: 5px;
             border-bottom: 1px solid #eee;
         }
+
+        /* Author name styling */
         .author-name {
             font-weight: bold;
             color: #2196F3;
         }
-        .message-content {
-            margin-left: 5px;
-        }
-        .status {
-            color: #666;
-            font-style: italic;
-        }
-        .controls {
-            grid-column: 1 / -1;
-            margin-bottom: 20px;
-        }
-        #connection-status {
-            margin-top: 10px;
-            padding: 5px;
-            border-radius: 3px;
-        }
-        .connected {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .disconnected {
-            background-color: #f44336;
-            color: white;
-        }
+
+        /* Badge styling for user roles */
         .badge {
             display: inline-block;
             padding: 2px 4px;
@@ -67,29 +54,22 @@
             font-size: 12px;
             background: #e0e0e0;
         }
-        .badge.mod { background: #2196F3; color: white; }
-        .badge.broadcaster { background: #f44336; color: white; }
-        .badge.subscriber { background: #4CAF50; color: white; }
+        .badge.mod { background: #2196F3; color: white; } /* Moderator */
+        .badge.broadcaster { background: #f44336; color: white; } /* Channel owner */
+        .badge.subscriber { background: #4CAF50; color: white; } /* Channel member */
+
+        /* Emote styling */
         .emote {
             display: inline-block;
             vertical-align: middle;
             height: 28px;
             margin: -4px 1px;
         }
-        
         .emote[data-custom="true"] {
-            height: 32px;  /* Custom emotes might be bigger */
+            height: 32px; /* Custom emotes are slightly larger */
         }
-        
-        .message-content {
-            margin-left: 5px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        
-        .text {
-            vertical-align: middle;
-        }
+
+        /* Storage type indicator */
         .storage-badge {
             font-size: 12px;
             padding: 2px 6px;
@@ -97,17 +77,27 @@
             margin-left: 8px;
             font-weight: normal;
         }
-        .storage-badge.redis {
-            background: #DC382D;
-            color: white;
+        .storage-badge.redis { background: #DC382D; color: white; }
+        .storage-badge.memory { background: #2196F3; color: white; }
+
+        /* Controls section */
+        .controls {
+            grid-column: 1 / -1; /* Span full width */
+            margin-bottom: 20px;
         }
-        .storage-badge.memory {
-            background: #2196F3;
-            color: white;
+
+        /* Connection status indicator */
+        #connection-status {
+            margin-top: 10px;
+            padding: 5px;
+            border-radius: 3px;
         }
+        .connected { background-color: #4CAF50; color: white; }
+        .disconnected { background-color: #f44336; color: white; }
     </style>
 </head>
 <body>
+    <!-- Connection controls -->
     <div class="controls">
         <input type="text" id="channel-id" placeholder="Channel ID/Username" value="holoen_ceciliaimmergreen">
         <select id="identifier-type">
@@ -119,17 +109,37 @@
         <div id="connection-status" class="disconnected">Disconnected</div>
     </div>
 
+    <!-- Live chat messages container -->
     <div id="chat-container"></div>
+
+    <!-- Statistics container -->
     <div id="stats-container">
         <h3>Chat Statistics <span id="storage-type" class="storage-badge"></span></h3>
         <div id="stats-content"></div>
     </div>
 
     <script>
+        // Global WebSocket instance
         let ws;
-        let statsInterval;
 
+        /**
+         * Connects to a YouTube live chat
+         * - Clears previous chat/stats
+         * - Disconnects existing connection
+         * - Establishes new WebSocket connection
+         * - Subscribes to specified channel
+         */
         function connect() {
+            // Clear previous chat and stats first
+            document.getElementById('chat-container').innerHTML = '';
+            document.getElementById('stats-content').innerHTML = '';
+            document.getElementById('storage-type').textContent = '';
+            
+            // Disconnect from previous connection if exists
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'unsubscribe' }));
+            }
+
             const channelId = document.getElementById('channel-id').value;
             const identifierType = document.getElementById('identifier-type').value;
             
@@ -137,23 +147,24 @@
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}`;
             
-            // Add error handling and logging
             try {
                 ws = new WebSocket(wsUrl);
                 console.log('Attempting connection to:', wsUrl);
 
+                // Handle connection errors
                 ws.onerror = (error) => {
                     console.error('WebSocket Error:', error);
                     document.getElementById('connection-status').className = 'disconnected';
                     document.getElementById('connection-status').textContent = 'Connection Error';
                 };
 
+                // On successful connection
                 ws.onopen = () => {
                     console.log('WebSocket connected successfully');
                     document.getElementById('connection-status').className = 'connected';
                     document.getElementById('connection-status').textContent = 'Connected';
                     
-                    // Subscribe to channel
+                    // Subscribe to the specified channel
                     ws.send(JSON.stringify({
                         type: 'subscribe',
                         identifier: channelId,
@@ -162,11 +173,13 @@
                     }));
                 };
 
+                // Handle disconnection
                 ws.onclose = () => {
                     document.getElementById('connection-status').className = 'disconnected';
                     document.getElementById('connection-status').textContent = 'Disconnected';
                 };
 
+                // Handle incoming messages
                 ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
@@ -202,6 +215,10 @@
             }
         }
 
+        /**
+         * Disconnects from the current chat
+         * Sends unsubscribe message and closes connection
+         */
         function disconnect() {
             if (ws) {
                 ws.send(JSON.stringify({ type: 'unsubscribe' }));
@@ -209,18 +226,23 @@
             }
         }
 
+        /**
+         * Appends a new chat message to the chat container
+         * Handles user badges, emotes, and text formatting
+         * @param {Object} message - The chat message object
+         */
         function appendChatMessage(message) {
             const container = document.getElementById('chat-container');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'chat-message';
 
-            // Create badges
+            // Create role badges
             const badgesHtml = [];
             if (message.data.author.roles.broadcaster) badgesHtml.push('<span class="badge broadcaster">Broadcaster</span>');
             if (message.data.author.roles.moderator) badgesHtml.push('<span class="badge mod">Mod</span>');
             if (message.data.author.roles.subscriber) badgesHtml.push('<span class="badge subscriber">Member</span>');
 
-            // Create message content from elements
+            // Process message elements (text and emotes)
             const contentHtml = message.data.content.elements.map(element => {
                 if (element.type === 'text') {
                     return `<span class="text">${element.value}</span>`;
@@ -236,6 +258,7 @@
                 return '';
             }).join('');
 
+            // Combine badges, author name, and message content
             messageDiv.innerHTML = `
                 ${badgesHtml.join('')}
                 <span class="author-name">${message.data.author.display_name}</span>
@@ -243,9 +266,14 @@
             `;
 
             container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
+            container.scrollTop = container.scrollHeight; // Auto-scroll to bottom
         }
 
+        /**
+         * Updates the stats display with new statistics
+         * Shows total messages, unique users, and top chatters
+         * @param {Object} stats - The statistics object
+         */
         function updateStats(stats) {
             if (!stats) {
                 console.warn('Received empty stats update');
@@ -262,30 +290,34 @@
                 <ul>
             `;
 
-            // Sort users by message count
-            uniqueUsers.sort((a, b) => b.messageCount - a.messageCount);
-
-            // Show top 10 users
-            uniqueUsers.slice(0, 10).forEach(user => {
-                html += `
-                    <li>
-                        ${user.display_name || user.username || 'Anonymous'} - ${user.messageCount || 0} messages
-                        ${user.roles?.broadcaster ? '👑' : ''}
-                        ${user.roles?.moderator ? '🛡️' : ''}
-                        ${user.roles?.subscriber ? '⭐' : ''}
-                    </li>
-                `;
-            });
+            // Sort users by message count and show top 10
+            uniqueUsers
+                .sort((a, b) => b.messageCount - a.messageCount)
+                .slice(0, 10)
+                .forEach(user => {
+                    html += `
+                        <li>
+                            ${user.display_name || user.username || 'Anonymous'} - ${user.messageCount || 0} messages
+                            ${user.roles?.broadcaster ? '👑' : ''}
+                            ${user.roles?.moderator ? '🛡️' : ''}
+                            ${user.roles?.subscriber ? '⭐' : ''}
+                        </li>
+                    `;
+                });
 
             html += '</ul>';
             container.innerHTML = html;
         }
 
+        /**
+         * Updates the connection status and storage type display
+         * @param {Object} status - The status update object
+         */
         function updateStatus(status) {
             const container = document.getElementById('connection-status');
             container.textContent = `Status: ${status.status}`;
             
-            // Update storage type indicator if provided
+            // Update storage type indicator (Redis/In-Memory)
             if (status.storage_type) {
                 const storageBadge = document.getElementById('storage-type');
                 storageBadge.textContent = status.storage_type === 'redis' ? 'Redis' : 'In-Memory';
