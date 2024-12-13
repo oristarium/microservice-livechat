@@ -11,29 +11,36 @@ function transformBadges(badge) {
 }
 
 function getRawMessage(messageArray) {
+    if (!messageArray || !Array.isArray(messageArray)) return '';
     return messageArray.map(element => 
-        element.text || element.emojiText || ''
+        element?.text || element?.emojiText || ''
     ).join('');
 }
 
 function getFormattedMessage(messageArray) {
+    if (!messageArray || !Array.isArray(messageArray)) return '';
     return messageArray.map(element => {
-        if (element.text) return element.text;
-        if (element.emojiText) return `:${element.emojiText}:`;
+        if (element?.text) return element.text;
+        if (element?.emojiText) return `:${element.emojiText}:`;
         return '';
     }).join('');
 }
 
 function getSanitizedMessage(messageArray) {
+    if (!messageArray || !Array.isArray(messageArray)) return '';
     return messageArray
-        .filter(element => element.text)
+        .filter(element => element?.text)
         .map(element => element.text)
         .join('');
 }
 
 function transformMessageElements(message) {
+    if (!message || !Array.isArray(message)) return [];
+    
     let position = 0;
     return message.map(element => {
+        if (!element) return null;
+        
         const length = element.text?.length || element.emojiText?.length || 0;
         const result = {
             type: element.text ? 'text' : 'emote',
@@ -51,7 +58,7 @@ function transformMessageElements(message) {
         
         position += length;
         return result;
-    });
+    }).filter(Boolean); // Remove any null results
 }
 
 function transformYouTubeMessage(ytMessage) {
