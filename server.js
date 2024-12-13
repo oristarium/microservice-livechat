@@ -196,7 +196,12 @@ wss.on('connection', (ws) => {
 
                     // Add client to the stream's client list
                     streamData.clients.add(ws);
-                    ws.send(JSON.stringify({ type: SERVER_MESSAGE_TYPES.STATUS, status: 'subscribed', identifier }));
+                    ws.send(JSON.stringify({ 
+                        type: SERVER_MESSAGE_TYPES.STATUS, 
+                        status: 'subscribed', 
+                        identifier,
+                        storage_type: process.env.STATS_STORAGE || 'memory'
+                    }));
                     break;
 
                 case CLIENT_MESSAGE_TYPES.UNSUBSCRIBE:

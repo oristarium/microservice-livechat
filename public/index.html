@@ -90,6 +90,21 @@
         .text {
             vertical-align: middle;
         }
+        .storage-badge {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+        .storage-badge.redis {
+            background: #DC382D;
+            color: white;
+        }
+        .storage-badge.memory {
+            background: #2196F3;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -106,7 +121,7 @@
 
     <div id="chat-container"></div>
     <div id="stats-container">
-        <h3>Chat Statistics</h3>
+        <h3>Chat Statistics <span id="storage-type" class="storage-badge"></span></h3>
         <div id="stats-content"></div>
     </div>
 
@@ -153,21 +168,33 @@
                 };
 
                 ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    
-                    switch (data.type) {
-                        case 'chat':
-                            appendChatMessage(data.data);
-                            break;
-                        case 'stats':
-                            updateStats(data.data);
-                            break;
-                        case 'status':
-                            updateStatus(data);
-                            break;
-                        case 'error':
-                            console.error('Error:', data.error);
-                            break;
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        switch (data.type) {
+                            case 'chat':
+                                if (data.data) {
+                                    appendChatMessage(data.data);
+                                }
+                                break;
+                            case 'stats':
+                                if (data.data) {
+                                    updateStats(data.data);
+                                } else {
+                                    console.warn('Received stats message without data');
+                                }
+                                break;
+                            case 'status':
+                                updateStatus(data);
+                                break;
+                            case 'error':
+                                console.error('Error:', data.error);
+                                break;
+                            default:
+                                console.warn('Unknown message type:', data.type);
+                        }
+                    } catch (error) {
+                        console.error('Error processing message:', error);
                     }
                 };
             } catch (error) {
@@ -220,11 +247,16 @@
         }
 
         function updateStats(stats) {
+            if (!stats) {
+                console.warn('Received empty stats update');
+                return;
+            }
+
             const container = document.getElementById('stats-content');
-            const uniqueUsers = stats.uniqueUsers;
+            const uniqueUsers = stats.uniqueUsers || [];
             
             let html = `
-                <p>Total Messages: ${stats.totalMessages}</p>
+                <p>Total Messages: ${stats.totalMessages || 0}</p>
                 <p>Unique Users: ${uniqueUsers.length}</p>
                 <h4>Top Chatters:</h4>
                 <ul>
@@ -237,10 +269,10 @@
             uniqueUsers.slice(0, 10).forEach(user => {
                 html += `
                     <li>
-                        ${user.display_name} - ${user.messageCount} messages
-                        ${user.roles.broadcaster ? '👑' : ''}
-                        ${user.roles.moderator ? '🛡️' : ''}
-                        ${user.roles.subscriber ? '⭐' : ''}
+                        ${user.display_name || user.username || 'Anonymous'} - ${user.messageCount || 0} messages
+                        ${user.roles?.broadcaster ? '👑' : ''}
+                        ${user.roles?.moderator ? '🛡️' : ''}
+                        ${user.roles?.subscriber ? '⭐' : ''}
                     </li>
                 `;
             });
@@ -252,6 +284,14 @@
         function updateStatus(status) {
             const container = document.getElementById('connection-status');
             container.textContent = `Status: ${status.status}`;
+            
+            // Update storage type indicator if provided
+            if (status.storage_type) {
+                const storageBadge = document.getElementById('storage-type');
+                storageBadge.textContent = status.storage_type === 'redis' ? 'Redis' : 'In-Memory';
+                storageBadge.className = `storage-badge ${status.storage_type}`;
+            }
+            
             if (status.status === 'started' || status.status === 'subscribed') {
                 container.className = 'connected';
             }
