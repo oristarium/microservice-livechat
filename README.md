@@ -329,6 +329,9 @@ VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
 VPS_USER=your_vps_username
 VPS_HOST=your_vps_ip_or_domain
 DOMAIN=your_websocket_domain  # e.g., wschat.example.com
+
+# Let's Encrypt SSL
+TRAEFIK_ACME_EMAIL=your_email@example.com  # Email for SSL certificate notifications
 ```
 
 Example values:
@@ -343,6 +346,9 @@ VPS_HOST=vps.example.com
 
 # Example DOMAIN
 DOMAIN=wschat.example.com
+
+# Example TRAEFIK_ACME_EMAIL
+TRAEFIK_ACME_EMAIL=admin@example.com
 ```
 
 3. Set up your VPS:
