@@ -39,6 +39,7 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           DOMAIN: ${{ secrets.DOMAIN }}
           TRAEFIK_ACME_EMAIL: ${{ secrets.TRAEFIK_ACME_EMAIL }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
           # Setup SSH
           mkdir -p ~/.ssh
@@ -46,12 +47,27 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
+          # Set deploy path with fallback
+          DEPLOY_DIR="${DEPLOY_PATH:-/var/www/microservice-livechat}"
+
           # Create .env file
           echo "DOMAIN=${DOMAIN}" > .env
           echo "TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}" >> .env
 
           # Deploy
-          ssh $VPS_USER@$VPS_HOST "mkdir -p /var/www/microservice-livechat"
-          scp .env docker-compose.yml $VPS_USER@$VPS_HOST:/var/www/microservice-livechat/
+          ssh $VPS_USER@$VPS_HOST "
+            # Create directory if it doesn't exist
+            mkdir -p ${DEPLOY_DIR}
+
+            # Check if network exists, create if it doesn't
+            if ! docker network ls | grep -q 'web'; then
+              echo 'Creating web network...'
+              docker network create web
+            else
+              echo 'Web network already exists'
+            fi
+          "
+
+          scp .env docker-compose.yml $VPS_USER@$VPS_HOST:${DEPLOY_DIR}/
           
-          ssh $VPS_USER@$VPS_HOST "cd /var/www/microservice-livechat && docker-compose down && docker-compose up -d microservice-livechat"
+          ssh $VPS_USER@$VPS_HOST "cd ${DEPLOY_DIR} && docker-compose down && docker-compose up -d microservice-livechat"
