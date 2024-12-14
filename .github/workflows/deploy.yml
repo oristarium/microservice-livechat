@@ -48,21 +48,26 @@ jobs:
           # Add host key verification
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
-          # Create and copy environment file first
-          echo "DOMAIN=${DOMAIN}" > .env
-          echo "TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}" >> .env
-          
-          # Create directories and set permissions
+          # Create temporary directory and prepare destination
           ssh $VPS_USER@$VPS_HOST "
+            mkdir -p ~/temp_deploy &&
+            sudo rm -rf /var/www/microservice-livechat &&
+            sudo mkdir -p /var/www/microservice-livechat &&
             sudo mkdir -p /var/www/microservice-livechat/letsencrypt &&
             sudo chown -R 1000:1000 /var/www/microservice-livechat/letsencrypt
           "
           
-          # Copy files
-          scp .env docker-compose.yml $VPS_USER@$VPS_HOST:/var/www/microservice-livechat/
+          # Create and copy environment file to temp directory
+          echo "DOMAIN=${DOMAIN}" > .env
+          echo "TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}" >> .env
           
-          # Deploy
+          # Copy files to temporary directory
+          scp .env docker-compose.yml $VPS_USER@$VPS_HOST:~/temp_deploy/
+          
+          # Move files and deploy
           ssh $VPS_USER@$VPS_HOST "
+            sudo cp -r ~/temp_deploy/* /var/www/microservice-livechat/ &&
+            rm -rf ~/temp_deploy &&
             cd /var/www/microservice-livechat &&
             sudo docker-compose down || true &&
             sudo docker-compose pull &&
