@@ -179,6 +179,19 @@ wss.on('connection', (ws) => {
                             activeStreams.set(identifier, streamData);
 
                             try {
+                                const statsCallbacks = process.env.ENABLE_STATS !== 'false' ? {
+                                    onStatsUpdate: (stats) => {
+                                        streamData.clients.forEach(client => {
+                                            if (client.readyState === 1) {
+                                                client.send(JSON.stringify({
+                                                    type: SERVER_MESSAGE_TYPES.STATS,
+                                                    data: stats
+                                                }));
+                                            }
+                                        });
+                                    }
+                                } : {};
+
                                 const ok = await chatHandler.start(
                                     // onStart
                                     (liveId) => {
@@ -216,17 +229,7 @@ wss.on('connection', (ws) => {
                                             }
                                         });
                                     },
-                                    // onStatsUpdate
-                                    (stats) => {
-                                        streamData.clients.forEach(client => {
-                                            if (client.readyState === 1) {
-                                                client.send(JSON.stringify({
-                                                    type: SERVER_MESSAGE_TYPES.STATS,
-                                                    data: stats
-                                                }));
-                                            }
-                                        });
-                                    }
+                                    statsCallbacks.onStatsUpdate
                                 );
 
                                 if (!ok) {

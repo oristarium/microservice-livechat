@@ -39,7 +39,7 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           DOMAIN: ${{ secrets.DOMAIN }}
           TRAEFIK_ACME_EMAIL: ${{ secrets.TRAEFIK_ACME_EMAIL }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          ENABLE_STATS: ${{ secrets.ENABLE_STATS }}
         run: |
           # Setup SSH
           mkdir -p ~/.ssh
@@ -53,6 +53,7 @@ jobs:
           # Create .env file
           echo "DOMAIN=${DOMAIN}" > .env
           echo "TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}" >> .env
+          echo "ENABLE_STATS=${ENABLE_STATS:-true}" >> .env
 
           # Deploy
           ssh $VPS_USER@$VPS_HOST "

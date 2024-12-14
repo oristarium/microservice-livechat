@@ -38,6 +38,7 @@ services:
       - DOMAIN=${DOMAIN:-localhost}
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=256
+      - ENABLE_STATS=${ENABLE_STATS:-true}
     depends_on:
       redis:
         condition: service_healthy
@@ -117,12 +118,12 @@ services:
           "CMD",
           "node",
           "-e",
-          "require('http').get('http://localhost:3000/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))",
+          "require('http').get('http://localhost:3000/health', (r) => { console.log('Health check status:', r.statusCode); process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', (e) => { console.error('Health check error:', e); process.exit(1); })",
         ]
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
