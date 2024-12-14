@@ -289,16 +289,47 @@ wss.on('connection', (ws) => {
     });
 });
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-    console.log('SIGTERM received. Cleaning up...');
+// Function to handle graceful shutdown
+async function gracefulShutdown(signal) {
+    console.log(`\n${signal} received. Cleaning up...`);
+
+    // Clean up all active streams
     for (const [channelId] of activeStreams) {
         await cleanupStream(channelId);
     }
+
+    // Close WebSocket server
+    wss.close(() => {
+        console.log('WebSocket server closed');
+    });
+
+    // Close HTTP server
     server.close(() => {
-        console.log('Server closed');
+        console.log('HTTP server closed');
         process.exit(0);
     });
+
+    // Force exit after 5 seconds if graceful shutdown fails
+    setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 5000);
+}
+
+// Handle different termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));   // Handles Ctrl+C
+process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // Handles nodemon restart
+
+// Handle uncaught exceptions and unhandled rejections
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    gracefulShutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    gracefulShutdown('unhandledRejection');
 });
 
 const PORT = process.env.PORT || 3000;
