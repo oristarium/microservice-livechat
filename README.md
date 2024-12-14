@@ -25,7 +25,6 @@
 ## Features
 
 - WebSocket endpoints for real-time chat messages
-- Real-time chat statistics tracking
 - Support for multiple platforms (YouTube, TikTok, Twitch)
 - Support for multiple channels simultaneously
 - Support for multiple clients per channel
@@ -33,7 +32,6 @@
 - Resource management (stops watching when no clients are connected)
 - Error handling and status updates
 - Health check endpoint
-- Redis support for persistent statistics (optional)
 
 ## Local Development
 
@@ -82,7 +80,6 @@ The server will:
 - Maintain separate chat handlers for each unique channel
 - Share chat handlers between clients watching the same channel
 - Clean up chat handlers only when no clients are watching
-- Track statistics per channel (either in memory or Redis)
 
 Note: While technically possible to subscribe to multiple chats in one connection, the current test interface (`/test`) is designed to handle one subscription per tab for better user experience and resource management.
 
@@ -109,13 +106,6 @@ Platform-specific identifier requirements:
 ```javascript
 {
     "type": "unsubscribe"
-}
-```
-
-3. Request current stats:
-```javascript
-{
-    "type": "get_stats"
 }
 ```
 
@@ -214,30 +204,6 @@ Common error codes:
 }
 ```
 
-4. Stats Updates:
-```javascript
-{
-    "type": "stats",
-    "data": {
-        "uniqueUsers": [
-            {
-                "id": string,
-                "username": string,
-                "display_name": string,
-                "roles": {
-                    "broadcaster": boolean,
-                    "moderator": boolean,
-                    "subscriber": boolean,
-                    "verified": boolean
-                },
-                "messageCount": number
-            }
-        ],
-        "totalMessages": number
-    }
-}
-```
-
 ## Example Usage
 
 ```javascript
@@ -276,9 +242,6 @@ ws.onmessage = (event) => {
         case 'chat':
             console.log('New chat message:', message.data);
             break;
-        case 'stats':
-            console.log('Stats update:', message.data);
-            break;
         case 'status':
             console.log('Status update:', message.status);
             break;
@@ -295,8 +258,6 @@ The service provides a test interface at `/test` that allows you to:
 - Select platform (YouTube, TikTok, or Twitch)
 - Connect to different channels
 - View live chat messages with badges and emotes
-- Monitor chat statistics in real-time
-- View top chatters and message counts
 
 ## Health Check
 

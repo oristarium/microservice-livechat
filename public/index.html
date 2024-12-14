@@ -12,15 +12,6 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            display: grid;
-            grid-template-columns: 1fr; /* Single column on mobile */
-            gap: 20px;
-        }
-
-        @media (min-width: 768px) {
-            body {
-                grid-template-columns: 2fr 1fr; /* Two columns on desktop */
-            }
         }
 
         /* Chat container styles */
@@ -30,15 +21,6 @@
             border: 1px solid #ccc;
             padding: 10px;
             min-height: 300px; /* Smaller height on mobile */
-        }
-
-        /* Stats container styles */
-        #stats-container {
-            height: auto;
-            max-height: 600px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
         }
 
         /* Message styling */
@@ -74,17 +56,6 @@
             width: auto;
             vertical-align: middle;
         }
-
-        /* Storage type indicator */
-        .storage-badge {
-            font-size: 12px;
-            padding: 2px 6px;
-            border-radius: 3px;
-            margin-left: 8px;
-            font-weight: normal;
-        }
-        .storage-badge.redis { background: #DC382D; color: white; }
-        .storage-badge.memory { background: #2196F3; color: white; }
 
         /* Controls section */
         .controls {
@@ -157,20 +128,6 @@
             padding: 4px;
         }
 
-        /* Improve stats display on mobile */
-        #stats-content ul {
-            padding-left: 20px;
-            margin: 10px 0;
-        }
-
-        #stats-content li {
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
         /* Add some spacing between platform selector and other controls */
         #platform-type {
             margin-bottom: 10px;
@@ -225,12 +182,6 @@
     <!-- Live chat messages container -->
     <div id="chat-container"></div>
 
-    <!-- Statistics container -->
-    <div id="stats-container">
-        <h3>Chat Statistics <span id="storage-type" class="storage-badge"></span></h3>
-        <div id="stats-content"></div>
-    </div>
-
     <script>
         // Global WebSocket instance
         let ws;
@@ -245,8 +196,6 @@
         function connect() {
             // Clear previous chat and stats first
             document.getElementById('chat-container').innerHTML = '';
-            document.getElementById('stats-content').innerHTML = '';
-            document.getElementById('storage-type').textContent = '';
             
             // Disconnect from previous connection if exists
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -304,13 +253,6 @@
                                     appendChatMessage(data.data);
                                 }
                                 break;
-                            case 'stats':
-                                if (data.data) {
-                                    updateStats(data.data);
-                                } else {
-                                    console.warn('Received stats message without data');
-                                }
-                                break;
                             case 'status':
                                 updateStatus(data);
                                 break;
@@ -324,8 +266,6 @@
                                 if (data.code === 'STREAM_NOT_LIVE') {
                                     document.getElementById('chat-container').innerHTML = 
                                         '<div class="helper-text">Stream is not currently live</div>';
-                                    document.getElementById('stats-content').innerHTML = '';
-                                    document.getElementById('storage-type').textContent = '';
                                 }
                                 break;
                             default:
@@ -377,55 +317,6 @@
 
             container.appendChild(messageDiv);
             container.scrollTop = container.scrollHeight; // Auto-scroll to bottom
-        }
-
-        /**
-         * Updates the stats display with new statistics
-         * Shows total messages, unique users, and top chatters
-         * @param {Object} stats - The statistics object
-         */
-        function updateStats(stats) {
-            if (!stats) {
-                console.warn('Received empty stats update');
-                return;
-            }
-
-            const container = document.getElementById('stats-content');
-            const uniqueUsers = stats.uniqueUsers || [];
-            
-            let html = `
-                <p>Total Messages: ${stats.totalMessages || 0}</p>
-                <p>Unique Users: ${uniqueUsers.length}</p>
-                <h4>Top Chatters:</h4>
-                <ul style="list-style: none; padding: 0;">
-            `;
-
-            // Sort users by message count and show top 10
-            uniqueUsers
-                .sort((a, b) => b.messageCount - a.messageCount)
-                .slice(0, 10)
-                .forEach(user => {
-                    const avatarUrl = user.avatar_url || 'assets/favicon.png'; // Fallback to default image
-                    html += `
-                        <li style="display: flex; align-items: center; margin-bottom: 10px; gap: 8px;">
-                            <img 
-                                src="${avatarUrl}" 
-                                alt="${user.display_name || user.username || 'Anonymous'}"
-                                style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"
-                                onerror="this.src='assets/favicon.png';"
-                            />
-                            <span>
-                                ${user.display_name || user.username || 'Anonymous'} - ${user.messageCount || 0} messages
-                                ${user.roles?.broadcaster ? '👑' : ''}
-                                ${user.roles?.moderator ? '🛡️' : ''}
-                                ${user.roles?.subscriber ? '⭐' : ''}
-                            </span>
-                        </li>
-                    `;
-                });
-
-            html += '</ul>';
-            container.innerHTML = html;
         }
 
         /**
