@@ -12,6 +12,9 @@ function transformBadges(badges) {
 }
 
 function transformTikTokMessage(tikTokMessage) {
+    // Pre-render the message as HTML
+    const rawHtml = `<span class="text">${tikTokMessage.comment}</span>`;
+
     return {
         type: 'chat',
         platform: 'tiktok',
@@ -40,7 +43,8 @@ function transformTikTokMessage(tikTokMessage) {
                     type: 'text',
                     value: tikTokMessage.comment,
                     position: [0, tikTokMessage.comment.length]
-                }]
+                }],
+                rawHtml: rawHtml
             },
             metadata: {
                 type: 'chat'

@@ -63,6 +63,23 @@ function transformMessageElements(message) {
 }
 
 function transformYouTubeMessage(ytMessage) {
+    // First transform message elements to build both elements array and HTML
+    const messageElements = transformMessageElements(ytMessage.message);
+    const rawHtml = messageElements.map(element => {
+        if (element.type === 'text') {
+            return `<span class="text">${element.value}</span>`;
+        } else if (element.type === 'emote') {
+            return `<img 
+                class="emote" 
+                src="${element.metadata.url}" 
+                alt="${element.metadata.alt}" 
+                title="${element.metadata.alt}"
+                ${element.metadata.is_custom ? 'data-custom="true"' : ''}
+            >`;
+        }
+        return '';
+    }).join('');
+
     return {
         type: 'chat',
         platform: 'youtube',
@@ -87,7 +104,8 @@ function transformYouTubeMessage(ytMessage) {
                 raw: getRawMessage(ytMessage.message),
                 formatted: getFormattedMessage(ytMessage.message),
                 sanitized: getSanitizedMessage(ytMessage.message),
-                elements: transformMessageElements(ytMessage.message)
+                elements: messageElements,
+                rawHtml: rawHtml
             },
             metadata: {
                 type: ytMessage.superchat ? 'super_chat' : 'chat',

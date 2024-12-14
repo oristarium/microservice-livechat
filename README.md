@@ -1,12 +1,13 @@
-# YouTube Live Chat WebSocket Microservice
+# Live Chat WebSocket Microservice
 
-A WebSocket-based microservice that provides real-time YouTube live chat messages and statistics without requiring the YouTube API.
+A WebSocket-based microservice that provides real-time live chat messages and statistics from multiple platforms (YouTube and TikTok) without requiring their APIs.
 
 ## Features
 
 - WebSocket endpoints for real-time chat messages
 - Real-time chat statistics tracking
-- Support for multiple YouTube channels simultaneously
+- Support for multiple platforms (YouTube, TikTok)
+- Support for multiple channels simultaneously
 - Support for multiple clients per channel
 - Automatic cleanup of inactive streams
 - Resource management (stops watching when no clients are connected)
@@ -72,10 +73,14 @@ Note: While technically possible to subscribe to multiple chats in one connectio
 {
     "type": "subscribe",
     "identifier": string,      // Channel username (without @), ID, or livestream ID
-    "identifierType": "username" | "channelId" | "liveId", // defaults to "username"
-    "platform": "youtube"      // defaults to "youtube", future support for other platforms
+    "identifierType": "username" | "channelId" | "liveId", // YouTube only, defaults to "username"
+    "platform": "youtube" | "tiktok"      // defaults to "youtube"
 }
 ```
+
+Platform-specific identifier requirements:
+- YouTube: Supports username (without @), channel ID (UC...), or live ID (watch?v=...)
+- TikTok: Only supports username (without @)
 
 2. Unsubscribe from current chat:
 ```javascript
@@ -119,6 +124,7 @@ Common error codes:
 - `INVALID_MESSAGE_TYPE`: Unknown message type received
 - `NO_ACTIVE_CHAT`: No chat is currently subscribed
 - `STREAM_NOT_FOUND`: Stream data not found
+- `UNSUPPORTED_PLATFORM`: Platform not supported
 
 3. Chat Messages:
 ```javascript
@@ -126,7 +132,7 @@ Common error codes:
     "type": "chat",
     "data": {
         "type": "chat",
-        "platform": "youtube",
+        "platform": "youtube" | "tiktok",
         "timestamp": "2024-03-20T12:34:56.789Z",
         "message_id": string,
         "room_id": string,
@@ -154,6 +160,7 @@ Common error codes:
                 "raw": string,        // Original message with emotes
                 "formatted": string,  // Message with emote codes
                 "sanitized": string,  // Plain text only
+                "rawHtml": string,    // Pre-rendered HTML with emotes
                 "elements": [         // Message broken into parts
                     {
                         "type": "text" | "emote",
@@ -213,12 +220,19 @@ Common error codes:
 ```javascript
 const ws = new WebSocket('ws://localhost:3000');
 
-// Subscribe using username (default)
+// Subscribe to YouTube using username (default)
 ws.send(JSON.stringify({
     type: 'subscribe',
     identifier: 'ceresfauna',
     identifierType: 'username', // this is the default
     platform: 'youtube' // this is the default
+}));
+
+// Subscribe to TikTok using username
+ws.send(JSON.stringify({
+    type: 'subscribe',
+    identifier: 'tiktokuser',
+    platform: 'tiktok'
 }));
 
 // Handle incoming messages
@@ -245,6 +259,7 @@ ws.onmessage = (event) => {
 ## Test Interface
 
 The service provides a test interface at `/test` that allows you to:
+- Select platform (YouTube or TikTok)
 - Connect to different channels
 - View live chat messages with badges and emotes
 - Monitor chat statistics in real-time

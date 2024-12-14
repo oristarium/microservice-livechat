@@ -359,27 +359,11 @@
             if (message.data.author.roles.moderator) badgesHtml.push('<span class="badge mod">Mod</span>');
             if (message.data.author.roles.subscriber) badgesHtml.push('<span class="badge subscriber">Member</span>');
 
-            // Process message elements (text and emotes)
-            const contentHtml = message.data.content.elements.map(element => {
-                if (element.type === 'text') {
-                    return `<span class="text">${element.value}</span>`;
-                } else if (element.type === 'emote') {
-                    return `<img 
-                        class="emote" 
-                        src="${element.metadata.url}" 
-                        alt="${element.metadata.alt}" 
-                        title="${element.metadata.alt}"
-                        ${element.metadata.is_custom ? 'data-custom="true"' : ''}
-                    >`;
-                }
-                return '';
-            }).join('');
-
             // Combine badges, author name, and message content
             messageDiv.innerHTML = `
                 ${badgesHtml.join('')}
                 <span class="author-name">${message.data.author.display_name}</span>
-                <span class="message-content">${contentHtml}</span>
+                <span class="message-content">${message.data.content.rawHtml}</span>
             `;
 
             container.appendChild(messageDiv);
