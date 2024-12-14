@@ -287,3 +287,81 @@ GET `/health` - Returns the status of the service and number of active streams:
     "activeStreams": number
 }
 ```
+
+## Deployment
+
+### Using GitHub Actions
+
+This project includes a CI/CD pipeline that automatically builds and deploys the microservice when you push to the main branch. Here's how to set it up:
+
+1. Fork this repository
+2. Set up the following GitHub Secrets in your repository (Settings > Secrets and variables > Actions):
+
+```bash
+# Docker Hub Credentials
+DOCKER_USERNAME=your_dockerhub_username
+DOCKER_PASSWORD=your_dockerhub_token  # Use an access token, not your password
+
+# VPS SSH Details
+VPS_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
+            your_private_key_here
+            -----END OPENSSH PRIVATE KEY-----
+VPS_USER=your_vps_username
+VPS_HOST=your_vps_ip_or_domain
+DOMAIN=your_websocket_domain  # e.g., wschat.example.com
+```
+
+Example values:
+```bash
+# Example VPS_USER
+VPS_USER=ubuntu
+
+# Example VPS_HOST
+VPS_HOST=123.456.789.0
+# or
+VPS_HOST=vps.example.com
+
+# Example DOMAIN
+DOMAIN=wschat.example.com
+```
+
+3. Set up your VPS:
+   - Install Docker and Docker Compose
+   - Create the web network:
+   ```bash
+   docker network create web
+   ```
+   - Install and configure Traefik (included in the docker-compose.yml)
+
+4. Push to the main branch, and GitHub Actions will:
+   - Build the Docker image
+   - Push it to Docker Hub
+   - Deploy it to your VPS
+   - Set up SSL certificates automatically
+
+### Manual Deployment
+
+If you prefer to deploy manually, you can use the following commands on your VPS:
+
+```bash
+# Create required directories
+mkdir -p /var/www/microservice-livechat
+cd /var/www/microservice-livechat
+
+# Create .env file
+echo "DOMAIN=your_websocket_domain" > .env
+
+# Download docker-compose.yml
+wget https://raw.githubusercontent.com/yourusername/your-repo/main/docker-compose.yml
+
+# Create web network if it doesn't exist
+docker network create web
+
+# Start the services
+docker-compose up -d
+```
+
+The service will be available at:
+- WebSocket: `wss://your_domain/ws`
+- Test Interface: `https://your_domain/test`
+- Health Check: `https://your_domain/health`
