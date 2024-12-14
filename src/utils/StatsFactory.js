@@ -3,8 +3,8 @@ const MemoryStats = require('./MemoryStats');
 
 class StatsFactory {
     static async createStats(channelId) {
-        // Check if stats are enabled
-        if (process.env.ENABLE_STATS === 'false') {
+        // Check if stats are enabled (default to false)
+        if (process.env.ENABLE_STATS !== 'true') {
             return new NoOpStats(channelId);
         }
 

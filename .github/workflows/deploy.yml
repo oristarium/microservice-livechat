@@ -53,7 +53,7 @@ jobs:
           # Create .env file
           echo "DOMAIN=${DOMAIN}" > .env
           echo "TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}" >> .env
-          echo "ENABLE_STATS=${ENABLE_STATS:-true}" >> .env
+          echo "ENABLE_STATS=${ENABLE_STATS:-false}" >> .env
 
           # Deploy
           ssh $VPS_USER@$VPS_HOST "

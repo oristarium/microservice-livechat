@@ -38,7 +38,7 @@ services:
       - DOMAIN=${DOMAIN:-localhost}
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=256
-      - ENABLE_STATS=${ENABLE_STATS:-true}
+      - ENABLE_STATS=${ENABLE_STATS:-false}
     depends_on:
       redis:
         condition: service_healthy
