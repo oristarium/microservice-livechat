@@ -308,9 +308,6 @@ GET `/health` - Returns the status of the service and number of active streams:
 }
 ```
 
-I'll update the deployment section of the README.md to reflect our learnings and improvements. Here's the revised deployment section:
-
-```markdown
 ## Deployment
 
 ### Using GitHub Actions
