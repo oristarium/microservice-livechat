@@ -2,9 +2,32 @@ const Redis = require('ioredis');
 const BaseStats = require('./BaseStats');
 
 class RedisStats extends BaseStats {
-    constructor(channelId, redisUrl) {
+    constructor(channelId) {
         super(channelId);
-        this.redis = new Redis(redisUrl);
+        this.redis = new Redis(process.env.REDIS_URL, {
+            retryStrategy(times) {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+            },
+            maxRetriesPerRequest: null,
+            enableReadyCheck: true,
+            reconnectOnError: function(err) {
+                const targetError = 'READONLY';
+                if (err.message.includes(targetError)) {
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        this.redis.on('error', (error) => {
+            console.error('Redis connection error:', error);
+        });
+
+        this.redis.on('connect', () => {
+            console.log('Connected to Redis');
+        });
+
         this.cacheTimeout = 5000;
         this.lastUpdate = 0;
         this.cachedStats = null;

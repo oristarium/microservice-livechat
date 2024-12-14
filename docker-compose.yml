@@ -37,7 +37,8 @@ services:
       - STATS_STORAGE=redis
       - DOMAIN=${DOMAIN:-localhost}
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     labels:
       # WebSocket route - only for /ws path
       - "traefik.http.routers.microservice-livechat-ws.rule=Host(`${DOMAIN}`) && PathPrefix(`/ws`)"
@@ -116,6 +117,11 @@ services:
       - redis-data:/data
     networks:
       - web
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     deploy:
       resources:
         limits:

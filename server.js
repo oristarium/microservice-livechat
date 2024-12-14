@@ -89,130 +89,152 @@ wss.on('connection', (ws) => {
             
             switch (data.type) {
                 case CLIENT_MESSAGE_TYPES.SUBSCRIBE:
-                    // Clean up previous subscription for this client
-                    if (currentChannelId) {
-                        const prevStreamData = activeStreams.get(currentChannelId);
-                        if (prevStreamData) {
-                            prevStreamData.clients.delete(ws);
-                            // Only cleanup if no clients are left
-                            if (prevStreamData.clients.size === 0) {
-                                cleanupStream(currentChannelId, false);
+                    try {
+                        // Clean up previous subscription for this client
+                        if (currentChannelId) {
+                            const prevStreamData = activeStreams.get(currentChannelId);
+                            if (prevStreamData) {
+                                prevStreamData.clients.delete(ws);
+                                // Only cleanup if no clients are left
+                                if (prevStreamData.clients.size === 0) {
+                                    await cleanupStream(currentChannelId, false);
+                                }
                             }
                         }
-                    }
 
-                    const identifier = data.identifier;
-                    const identifierType = data.identifierType || 'username';
-                    const platform = data.platform || 'youtube';
-                    
-                    currentChannelId = identifier;
+                        const identifier = data.identifier;
+                        const identifierType = data.identifierType || 'username';
+                        const platform = data.platform || 'youtube';
+                        
+                        currentChannelId = identifier;
 
-                    let streamData = activeStreams.get(identifier);
+                        let streamData = activeStreams.get(identifier);
 
-                    if (!streamData) {
-                        // Create new chat handler based on platform
-                        let chatHandler;
-                        switch (platform) {
-                            case 'youtube':
-                                chatHandler = new YouTubeChatHandler(identifier, identifierType);
-                                break;
-                            case 'tiktok':
-                                chatHandler = new TikTokChatHandler(identifier);
-                                break;
-                            case 'twitch':
-                                chatHandler = new TwitchChatHandler(identifier);
-                                break;
-                            default:
-                                throw new Error(`Unsupported platform: ${platform}`);
-                        }
+                        if (!streamData) {
+                            // Create new chat handler based on platform
+                            let chatHandler;
+                            switch (platform) {
+                                case 'youtube':
+                                    chatHandler = new YouTubeChatHandler(identifier, identifierType);
+                                    break;
+                                case 'tiktok':
+                                    chatHandler = new TikTokChatHandler(identifier);
+                                    break;
+                                case 'twitch':
+                                    chatHandler = new TwitchChatHandler(identifier);
+                                    break;
+                                default:
+                                    throw new Error(`Unsupported platform: ${platform}`);
+                            }
 
-                        streamData = {
-                            chatHandler,
-                            clients: new Set(),
-                            isActive: false
-                        };
-                        activeStreams.set(identifier, streamData);
-
-                        try {
-                            const ok = await chatHandler.start(
-                                // onStart
-                                (liveId) => {
-                                    const status = { type: SERVER_MESSAGE_TYPES.STATUS, status: 'started', liveId };
-                                    streamData.clients.forEach(client => {
-                                        if (client.readyState === 1) {
-                                            client.send(JSON.stringify(status));
-                                        }
-                                    });
-                                },
-                                // onChat
-                                (transformedMessage) => {
-                                    const message = { type: SERVER_MESSAGE_TYPES.CHAT, data: transformedMessage };
-                                    streamData.clients.forEach(client => {
-                                        if (client.readyState === 1) {
-                                            client.send(JSON.stringify(message));
-                                        }
-                                    });
-                                },
-                                // onEnd
-                                () => {
-                                    // Only send end message if not already cleaning up
-                                    if (activeStreams.has(identifier)) {
-                                        cleanupStream(identifier);
-                                    }
-                                },
-                                // onError
-                                (error) => {
-                                    streamData.clients.forEach(client => {
-                                        if (client.readyState === 1) {
-                                            client.send(JSON.stringify({ 
-                                                type: SERVER_MESSAGE_TYPES.ERROR, 
-                                                error: error.message 
-                                            }));
-                                        }
-                                    });
-                                },
-                                // onStatsUpdate
-                                (stats) => {
-                                    streamData.clients.forEach(client => {
-                                        if (client.readyState === 1) {
-                                            client.send(JSON.stringify({
-                                                type: SERVER_MESSAGE_TYPES.STATS,
-                                                data: stats
-                                            }));
-                                        }
-                                    });
-                                }
-                            );
-
-                            if (!ok) {
+                            // Initialize stats with proper error handling
+                            try {
+                                chatHandler.stats = await StatsFactory.createStats(identifier);
+                            } catch (error) {
+                                console.error('Failed to initialize stats:', error);
                                 ws.send(JSON.stringify({ 
                                     type: SERVER_MESSAGE_TYPES.ERROR, 
-                                    error: 'Stream is not live',
-                                    code: 'STREAM_NOT_LIVE'
+                                    error: 'Failed to initialize stats',
+                                    details: error.message
+                                }));
+                                return;
+                            }
+
+                            streamData = {
+                                chatHandler,
+                                clients: new Set(),
+                                isActive: false
+                            };
+                            activeStreams.set(identifier, streamData);
+
+                            try {
+                                const ok = await chatHandler.start(
+                                    // onStart
+                                    (liveId) => {
+                                        const status = { type: SERVER_MESSAGE_TYPES.STATUS, status: 'started', liveId };
+                                        streamData.clients.forEach(client => {
+                                            if (client.readyState === 1) {
+                                                client.send(JSON.stringify(status));
+                                            }
+                                        });
+                                    },
+                                    // onChat
+                                    (transformedMessage) => {
+                                        const message = { type: SERVER_MESSAGE_TYPES.CHAT, data: transformedMessage };
+                                        streamData.clients.forEach(client => {
+                                            if (client.readyState === 1) {
+                                                client.send(JSON.stringify(message));
+                                            }
+                                        });
+                                    },
+                                    // onEnd
+                                    () => {
+                                        // Only send end message if not already cleaning up
+                                        if (activeStreams.has(identifier)) {
+                                            cleanupStream(identifier);
+                                        }
+                                    },
+                                    // onError
+                                    (error) => {
+                                        streamData.clients.forEach(client => {
+                                            if (client.readyState === 1) {
+                                                client.send(JSON.stringify({ 
+                                                    type: SERVER_MESSAGE_TYPES.ERROR, 
+                                                    error: error.message 
+                                                }));
+                                            }
+                                        });
+                                    },
+                                    // onStatsUpdate
+                                    (stats) => {
+                                        streamData.clients.forEach(client => {
+                                            if (client.readyState === 1) {
+                                                client.send(JSON.stringify({
+                                                    type: SERVER_MESSAGE_TYPES.STATS,
+                                                    data: stats
+                                                }));
+                                            }
+                                        });
+                                    }
+                                );
+
+                                if (!ok) {
+                                    ws.send(JSON.stringify({ 
+                                        type: SERVER_MESSAGE_TYPES.ERROR, 
+                                        error: 'Stream is not live',
+                                        code: 'STREAM_NOT_LIVE'
+                                    }));
+                                    cleanupStream(identifier);
+                                    return;
+                                }
+                                streamData.isActive = true;
+                            } catch (error) {
+                                ws.send(JSON.stringify({ 
+                                    type: SERVER_MESSAGE_TYPES.ERROR, 
+                                    error: 'Failed to start chat',
+                                    details: error.message
                                 }));
                                 cleanupStream(identifier);
                                 return;
                             }
-                            streamData.isActive = true;
-                        } catch (error) {
-                            ws.send(JSON.stringify({ 
-                                type: SERVER_MESSAGE_TYPES.ERROR, 
-                                error: 'Failed to start chat',
-                                details: error.message
-                            }));
-                            cleanupStream(identifier);
-                            return;
                         }
-                    }
 
-                    // Add client to the stream's client list
-                    streamData.clients.add(ws);
-                    ws.send(JSON.stringify({ 
-                        type: SERVER_MESSAGE_TYPES.STATUS, 
-                        status: 'subscribed', 
-                        identifier,
-                        storage_type: process.env.STATS_STORAGE || 'memory'
-                    }));
+                        // Add client to the stream's client list
+                        streamData.clients.add(ws);
+                        ws.send(JSON.stringify({ 
+                            type: SERVER_MESSAGE_TYPES.STATUS, 
+                            status: 'subscribed', 
+                            identifier,
+                            storage_type: process.env.STATS_STORAGE || 'memory'
+                        }));
+                    } catch (error) {
+                        console.error('Error in subscribe handler:', error);
+                        ws.send(JSON.stringify({ 
+                            type: SERVER_MESSAGE_TYPES.ERROR, 
+                            error: 'Subscription failed',
+                            details: error.message
+                        }));
+                    }
                     break;
 
                 case CLIENT_MESSAGE_TYPES.UNSUBSCRIBE:
@@ -269,6 +291,7 @@ wss.on('connection', (ws) => {
                     }));
             }
         } catch (error) {
+            console.error('WebSocket message error:', error);
             ws.send(JSON.stringify({ 
                 type: SERVER_MESSAGE_TYPES.ERROR, 
                 error: error.message 
@@ -276,8 +299,8 @@ wss.on('connection', (ws) => {
         }
     });
 
-    // Handle client disconnect
-    ws.on('close', () => {
+    // Handle client disconnect with async cleanup
+    ws.on('close', async () => {
         if (currentChannelId) {
             const streamData = activeStreams.get(currentChannelId);
             if (streamData) {
@@ -285,7 +308,7 @@ wss.on('connection', (ws) => {
                 
                 // If no clients are connected, cleanup the stream
                 if (streamData.clients.size === 0) {
-                    cleanupStream(currentChannelId);
+                    await cleanupStream(currentChannelId);
                 }
             }
         }
