@@ -27,6 +27,9 @@ services:
         max-size: "10m"
         max-file: "3"
     restart: unless-stopped
+    environment:
+      - DOMAIN=${DOMAIN}
+      - TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}
 
   microservice-livechat:
     image: roffidaijoubu/microservice-livechat:latest
