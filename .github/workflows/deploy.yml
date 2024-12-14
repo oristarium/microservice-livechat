@@ -73,7 +73,7 @@ jobs:
           ssh $VPS_USER@$VPS_HOST "
             cd ${DEPLOY_DIR} && 
             docker-compose down --remove-orphans &&
-            if ! docker ps -q -f name=^/traefik$ >/dev/null; then
+            if ! docker ps --format '{{.Names}}' | grep -E '(^traefik$|^/traefik$|_traefik_)' >/dev/null; then
               echo 'No Traefik found, starting everything...'
               docker-compose up -d
             else
