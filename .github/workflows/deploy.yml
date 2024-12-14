@@ -3,25 +3,22 @@ name: CI/CD Pipeline for Microservice
 on:
   push:
     branches:
-      - main  # Trigger the pipeline when pushing to the main branch
+      - main
 
 jobs:
   build-and-push:
     runs-on: ubuntu-22.04
 
     steps:
-      # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Step 3: Build and push Docker image
       - name: Build and push Docker image
         run: |
           docker build -t roffidaijoubu/microservice-livechat:latest .
@@ -32,39 +29,45 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # Step 1: Deploy to VPS
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Deploy to VPS
         env:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           # Set up SSH private key for GitHub Actions
           mkdir -p ~/.ssh
           echo "${SSH_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          
+          # Add host key verification
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
-          # Ensure the Docker 'web' network exists
-          ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
-            sudo docker network inspect web >/dev/null 2>&1 || sudo docker network create web
+          # Create temporary directory and prepare destination
+          ssh $VPS_USER@$VPS_HOST "
+            mkdir -p ~/temp_deploy &&
+            sudo rm -rf /var/www/microservice-livechat &&
+            sudo mkdir -p /var/www/microservice-livechat
           "
+          
+          # Copy files to temporary directory
+          scp docker-compose.yml $VPS_USER@$VPS_HOST:~/temp_deploy/
+          scp .env $VPS_USER@$VPS_HOST:~/temp_deploy/ || true
 
-          # Pull the latest repository and update docker-compose
-          ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
-            cd /var/www/microservice-livechat || (sudo mkdir -p /var/www/microservice-livechat && cd /var/www/microservice-livechat) &&
-            sudo git init &&
-            sudo git remote set-url origin https://ghp_${PAT_TOKEN}@github.com/roffidaijoubu/microservice-livechat.git || sudo git remote add origin https://ghp_${PAT_TOKEN}@github.com/roffidaijoubu/microservice-livechat.git &&
-            sudo git config --global credential.helper store &&
-            echo "https://ghp_${PAT_TOKEN}@github.com" > ~/.git-credentials &&
-            sudo git fetch origin &&
-            sudo git reset --hard origin/main
-          "
-
-          # Deploy the microservice using docker-compose
-          ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
+          # Move files to final destination and deploy
+          ssh $VPS_USER@$VPS_HOST "
+            sudo cp ~/temp_deploy/* /var/www/microservice-livechat/ &&
+            rm -rf ~/temp_deploy &&
+            
+            # Create network if it doesn't exist
+            sudo docker network inspect web >/dev/null 2>&1 || sudo docker network create web &&
+            
+            # Deploy using docker-compose
             cd /var/www/microservice-livechat &&
-            sudo docker-compose down &&
+            sudo docker-compose down || true &&
             sudo docker-compose pull &&
             sudo docker-compose up -d
           "
