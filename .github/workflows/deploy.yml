@@ -54,19 +54,29 @@ jobs:
             sudo rm -rf /var/www/microservice-livechat &&
             sudo mkdir -p /var/www/microservice-livechat &&
             sudo mkdir -p /var/www/microservice-livechat/letsencrypt &&
-            sudo chown -R 1000:1000 /var/www/microservice-livechat/letsencrypt
+            sudo chown -R $VPS_USER:$VPS_USER /var/www/microservice-livechat &&
+            sudo chmod -R 755 /var/www/microservice-livechat
           "
           
           # Create and copy environment file to temp directory
           echo "DOMAIN=${DOMAIN}" > .env
           echo "TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}" >> .env
           
+          # Debug: Show env file contents
+          echo "Local .env contents:"
+          cat .env
+          
           # Copy files to temporary directory
           scp .env docker-compose.yml $VPS_USER@$VPS_HOST:~/temp_deploy/
           
-          # Move files and deploy
+          # Move files and deploy with verification
           ssh $VPS_USER@$VPS_HOST "
-            sudo cp -r ~/temp_deploy/* /var/www/microservice-livechat/ &&
+            echo 'Temp directory contents:' &&
+            ls -la ~/temp_deploy &&
+            sudo cp -rv ~/temp_deploy/* /var/www/microservice-livechat/ &&
+            echo 'Final directory contents:' &&
+            ls -la /var/www/microservice-livechat &&
+            cat /var/www/microservice-livechat/.env &&
             rm -rf ~/temp_deploy &&
             cd /var/www/microservice-livechat &&
             sudo docker-compose down || true &&
