@@ -29,8 +29,6 @@ services:
       restart_policy:
         condition: on-failure
         max_attempts: 3
-    # This makes docker-compose ignore errors if the container already exists
-    x-condition: "! docker ps -q -f name=^/traefik$"
 
   microservice-livechat:
     image: roffidaijoubu/microservice-livechat:latest
