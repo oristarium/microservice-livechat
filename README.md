@@ -8,16 +8,17 @@
 
 <i>A WebSocket-based microservice that provides real-time live chat messages and statistics from multiple platforms (YouTube, TikTok, and Twitch) without requiring their APIs.</i>
 
-<a href="https://github.com/oristarium/streaming-chat-overlay/stargazers"><img src="https://img.shields.io/github/stars/oristarium/streaming-chat-overlay" alt="Stars Badge"/></a>
-<a href="https://github.com/oristarium/streaming-chat-overlay/network/members"><img src="https://img.shields.io/github/forks/oristarium/streaming-chat-overlay" alt="Forks Badge"/></a>
-<a href="https://github.com/oristarium/streaming-chat-overlay/pulls"><img src="https://img.shields.io/github/issues-pr/oristarium/streaming-chat-overlay" alt="Pull Requests Badge"/></a>
-<a href="https://github.com/oristarium/streaming-chat-overlay/issues"><img src="https://img.shields.io/github/issues/oristarium/streaming-chat-overlay" alt="Issues Badge"/></a>
-<a href="https://github.com/oristarium/streaming-chat-overlay/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/oristarium/streaming-chat-overlay?color=2b9348"></a>
-<a href="https://github.com/oristarium/streaming-chat-overlay/blob/master/LICENSE"><img src="https://img.shields.io/github/license/oristarium/streaming-chat-overlay?color=2b9348" alt="License Badge"/></a>
+<a href="https://github.com/roffidaijoubu/microservice-livechat/stargazers"><img src="https://img.shields.io/github/stars/roffidaijoubu/microservice-livechat" alt="Stars Badge"/></a>
+<a href="https://github.com/roffidaijoubu/microservice-livechat/network/members"><img src="https://img.shields.io/github/forks/roffidaijoubu/microservice-livechat" alt="Forks Badge"/></a>
+<a href="https://github.com/roffidaijoubu/microservice-livechat/pulls"><img src="https://img.shields.io/github/issues-pr/roffidaijoubu/microservice-livechat" alt="Pull Requests Badge"/></a>
+<a href="https://github.com/roffidaijoubu/microservice-livechat/issues"><img src="https://img.shields.io/github/issues/roffidaijoubu/microservice-livechat" alt="Issues Badge"/></a>
+<a href="https://github.com/roffidaijoubu/microservice-livechat/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/roffidaijoubu/microservice-livechat?color=2b9348"></a>
+<a href="https://github.com/roffidaijoubu/microservice-livechat/blob/master/LICENSE"><img src="https://img.shields.io/github/license/roffidaijoubu/microservice-livechat?color=2b9348" alt="License Badge"/></a>
 
-<img alt="Live Chat WebSocket Microservice Demo" src="https://ucarecdn.com/87bb45de-4a95-40d7-83c6-73866de942d5/-/preview/1000x1000/"> </img>
+<h3 align="center">Made with ❤️ by</h3>
+<img alt="Oristarium Logo" src="https://ucarecdn.com/87bb45de-4a95-40d7-83c6-73866de942d5/-/crop/5518x2493/1408,2949/-/preview/1000x1000/"> </img>
 
-<i>Love the project? Please consider <a href="https://trakteer.id/oristarium">donating</a> to help it improve!</i>
+<i>Love the project? Please consider <a href="https://trakteer.id/oristarium">donating</a> to help us improve!</i>
 
 </div>
 
