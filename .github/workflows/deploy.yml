@@ -37,6 +37,7 @@ jobs:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
+          DOMAIN: ${{ secrets.DOMAIN }}
         run: |
           # Set up SSH private key for GitHub Actions
           mkdir -p ~/.ssh
@@ -53,19 +54,18 @@ jobs:
             sudo mkdir -p /var/www/microservice-livechat
           "
           
+          # Export environment variables for docker-compose
+          ssh $VPS_USER@$VPS_HOST "
+            echo \"DOMAIN=${DOMAIN}\" > ~/temp_deploy/.env
+          "
+          
           # Copy files to temporary directory
           scp docker-compose.yml $VPS_USER@$VPS_HOST:~/temp_deploy/
-          scp .env $VPS_USER@$VPS_HOST:~/temp_deploy/ || true
-
-          # Move files to final destination and deploy
+          
+          # Move files and deploy
           ssh $VPS_USER@$VPS_HOST "
             sudo cp ~/temp_deploy/* /var/www/microservice-livechat/ &&
             rm -rf ~/temp_deploy &&
-            
-            # Create network if it doesn't exist
-            sudo docker network inspect web >/dev/null 2>&1 || sudo docker network create web &&
-            
-            # Deploy using docker-compose
             cd /var/www/microservice-livechat &&
             sudo docker-compose down || true &&
             sudo docker-compose pull &&

@@ -397,7 +397,7 @@
                 <p>Total Messages: ${stats.totalMessages || 0}</p>
                 <p>Unique Users: ${uniqueUsers.length}</p>
                 <h4>Top Chatters:</h4>
-                <ul>
+                <ul style="list-style: none; padding: 0;">
             `;
 
             // Sort users by message count and show top 10
@@ -405,12 +405,21 @@
                 .sort((a, b) => b.messageCount - a.messageCount)
                 .slice(0, 10)
                 .forEach(user => {
+                    const avatarUrl = user.avatar_url || 'assets/favicon.png'; // Fallback to default image
                     html += `
-                        <li>
-                            ${user.display_name || user.username || 'Anonymous'} - ${user.messageCount || 0} messages
-                            ${user.roles?.broadcaster ? '👑' : ''}
-                            ${user.roles?.moderator ? '🛡️' : ''}
-                            ${user.roles?.subscriber ? '⭐' : ''}
+                        <li style="display: flex; align-items: center; margin-bottom: 10px; gap: 8px;">
+                            <img 
+                                src="${avatarUrl}" 
+                                alt="${user.display_name || user.username || 'Anonymous'}"
+                                style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"
+                                onerror="this.src='assets/favicon.png';"
+                            />
+                            <span>
+                                ${user.display_name || user.username || 'Anonymous'} - ${user.messageCount || 0} messages
+                                ${user.roles?.broadcaster ? '👑' : ''}
+                                ${user.roles?.moderator ? '🛡️' : ''}
+                                ${user.roles?.subscriber ? '⭐' : ''}
+                            </span>
                         </li>
                     `;
                 });
