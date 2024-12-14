@@ -1,6 +1,25 @@
-# Live Chat WebSocket Microservice
+<h1 align="center">Live Chat WebSocket Microservice</h1>
+<div align="center">
+<img src="https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg" alt="Awesome Badge"/>
+<img src="https://img.shields.io/static/v1?label=%F0%9F%8C%9F&message=If%20Useful&style=style=flat&color=BC4E99" alt="Star Badge"/>
+<a href="https://discord.gg/JgjExyntw4"><img src="https://img.shields.io/discord/733027681184251937.svg?style=flat&label=Join%20Community&color=7289DA" alt="Join Community Badge"/></a>
+<a href="https://twitter.com/oristarium"><img src="https://img.shields.io/twitter/follow/oristarium.svg?style=social" /></a>
+<br>
 
-A WebSocket-based microservice that provides real-time live chat messages and statistics from multiple platforms (YouTube, TikTok, and Twitch) without requiring their APIs.
+<i>A WebSocket-based microservice that provides real-time live chat messages and statistics from multiple platforms (YouTube, TikTok, and Twitch) without requiring their APIs.</i>
+
+<a href="https://github.com/oristarium/streaming-chat-overlay/stargazers"><img src="https://img.shields.io/github/stars/oristarium/streaming-chat-overlay" alt="Stars Badge"/></a>
+<a href="https://github.com/oristarium/streaming-chat-overlay/network/members"><img src="https://img.shields.io/github/forks/oristarium/streaming-chat-overlay" alt="Forks Badge"/></a>
+<a href="https://github.com/oristarium/streaming-chat-overlay/pulls"><img src="https://img.shields.io/github/issues-pr/oristarium/streaming-chat-overlay" alt="Pull Requests Badge"/></a>
+<a href="https://github.com/oristarium/streaming-chat-overlay/issues"><img src="https://img.shields.io/github/issues/oristarium/streaming-chat-overlay" alt="Issues Badge"/></a>
+<a href="https://github.com/oristarium/streaming-chat-overlay/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/oristarium/streaming-chat-overlay?color=2b9348"></a>
+<a href="https://github.com/oristarium/streaming-chat-overlay/blob/master/LICENSE"><img src="https://img.shields.io/github/license/oristarium/streaming-chat-overlay?color=2b9348" alt="License Badge"/></a>
+
+<img alt="Live Chat WebSocket Microservice Demo" src="https://ucarecdn.com/87bb45de-4a95-40d7-83c6-73866de942d5/-/preview/1000x1000/"> </img>
+
+<i>Love the project? Please consider <a href="https://trakteer.id/oristarium">donating</a> to help it improve!</i>
+
+</div>
 
 ## Features
 
@@ -365,3 +384,21 @@ The service will be available at:
 - WebSocket: `wss://your_domain/ws`
 - Test Interface: `https://your_domain/test`
 - Health Check: `https://your_domain/health`
+
+## Credits
+
+This project integrates with multiple platforms by leveraging the following excellent open-source projects:
+
+### YouTube Chat Integration
+- [youtube-chat](https://github.com/LinaTsukusu/youtube-chat) by LinaTsukusu
+- A Node.js library to fetch YouTube live chat without using the YouTube API
+
+### Twitch Chat Integration  
+- [twitch-webchat](https://github.com/talmobi/twitch-webchat) by talmobi
+- Consume Twitch web chat programmatically without requiring authentication
+
+### TikTok Live Integration
+- [TikTok-Live-Connector](https://github.com/zerodytrash/TikTok-Live-Connector) by zerodytrash
+- Node.js library to receive TikTok LIVE events in real-time
+
+These libraries made it possible to create a unified chat experience across multiple platforms. Special thanks to all the contributors of these projects! 🙏
