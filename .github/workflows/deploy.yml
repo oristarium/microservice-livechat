@@ -40,35 +40,18 @@ jobs:
           DOMAIN: ${{ secrets.DOMAIN }}
           TRAEFIK_ACME_EMAIL: ${{ secrets.TRAEFIK_ACME_EMAIL }}
         run: |
-          # Set up SSH private key for GitHub Actions
+          # Setup SSH
           mkdir -p ~/.ssh
           echo "${SSH_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          
-          # Add host key verification
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
-          # Prepare destination directory
-          ssh $VPS_USER@$VPS_HOST "
-            mkdir -p /var/www/microservice-livechat/letsencrypt
-          "
-          
-          # Create environment file
+          # Create .env file
           echo "DOMAIN=${DOMAIN}" > .env
           echo "TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}" >> .env
-          
-          # Copy files directly to destination
+
+          # Deploy
+          ssh $VPS_USER@$VPS_HOST "mkdir -p /var/www/microservice-livechat"
           scp .env docker-compose.yml $VPS_USER@$VPS_HOST:/var/www/microservice-livechat/
           
-          # Deploy with Traefik check
-          ssh $VPS_USER@$VPS_HOST "
-            cd /var/www/microservice-livechat &&
-            if docker ps -q -f name=^/traefik$ >/dev/null; then
-              echo 'Traefik is already running, skipping Traefik deployment' &&
-              cp docker-compose.yml docker-compose.yml.bak &&
-              sed -i '/^  traefik:/,/^  [^ ]/d' docker-compose.yml
-            fi &&
-            docker-compose down --remove-orphans &&
-            docker-compose pull &&
-            docker-compose up -d
-          "
+          ssh $VPS_USER@$VPS_HOST "cd /var/www/microservice-livechat && docker-compose down && docker-compose up -d microservice-livechat"
