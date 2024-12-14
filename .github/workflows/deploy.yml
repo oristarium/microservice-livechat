@@ -48,38 +48,23 @@ jobs:
           # Add host key verification
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
-          # Create temporary directory and prepare destination
+          # Prepare destination directory
           ssh $VPS_USER@$VPS_HOST "
-            mkdir -p ~/temp_deploy &&
-            sudo rm -rf /var/www/microservice-livechat &&
-            sudo mkdir -p /var/www/microservice-livechat &&
-            sudo mkdir -p /var/www/microservice-livechat/letsencrypt &&
-            sudo chown -R $VPS_USER:$VPS_USER /var/www/microservice-livechat &&
-            sudo chmod -R 755 /var/www/microservice-livechat
+            mkdir -p /var/www/microservice-livechat/letsencrypt
           "
           
-          # Create and copy environment file to temp directory
+          # Create environment file
           echo "DOMAIN=${DOMAIN}" > .env
           echo "TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}" >> .env
           
-          # Debug: Show env file contents
-          echo "Local .env contents:"
-          cat .env
+          # Copy files directly to destination
+          scp .env docker-compose.yml $VPS_USER@$VPS_HOST:/var/www/microservice-livechat/
           
-          # Copy files to temporary directory
-          scp .env docker-compose.yml $VPS_USER@$VPS_HOST:~/temp_deploy/
-          
-          # Move files and deploy with verification
+          # Deploy
           ssh $VPS_USER@$VPS_HOST "
-            echo 'Temp directory contents:' &&
-            ls -la ~/temp_deploy &&
-            sudo cp -rv ~/temp_deploy/* /var/www/microservice-livechat/ &&
-            echo 'Final directory contents:' &&
-            ls -la /var/www/microservice-livechat &&
-            cat /var/www/microservice-livechat/.env &&
-            rm -rf ~/temp_deploy &&
             cd /var/www/microservice-livechat &&
-            sudo docker-compose down || true &&
-            sudo docker-compose pull &&
-            sudo docker-compose up -d
+            docker container rm -f traefik || true &&
+            docker-compose down --remove-orphans || true &&
+            docker-compose pull &&
+            docker-compose up -d
           "
