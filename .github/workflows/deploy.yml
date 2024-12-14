@@ -70,4 +70,14 @@ jobs:
 
           scp .env docker-compose.yml $VPS_USER@$VPS_HOST:${DEPLOY_DIR}/
           
-          ssh $VPS_USER@$VPS_HOST "cd ${DEPLOY_DIR} && docker-compose down && docker-compose up -d microservice-livechat"
+          ssh $VPS_USER@$VPS_HOST "
+            cd ${DEPLOY_DIR} && 
+            docker-compose down --remove-orphans &&
+            if ! docker ps -q -f name=^/traefik$ >/dev/null; then
+              echo 'No Traefik found, starting everything...'
+              docker-compose up -d
+            else
+              echo 'Traefik already running, starting only microservice...'
+              docker-compose up -d microservice-livechat
+            fi
+          "
