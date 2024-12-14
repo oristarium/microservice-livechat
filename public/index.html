@@ -190,6 +190,7 @@
         <select id="platform-type">
             <option value="youtube">YouTube</option>
             <option value="tiktok">TikTok</option>
+            <option value="twitch">Twitch</option>
         </select>
         <input type="text" id="channel-id" placeholder="Enter channel ID">
         <select id="identifier-type">
@@ -211,6 +212,11 @@
                 <b>TikTok:</b><br>
                 • Username: TikTok username without @ (e.g., tiktokuser)<br>
                 Note: Only username is supported for TikTok
+            </small>
+            <small id="twitch-help" style="display: none;">
+                <b>Twitch:</b><br>
+                • Username: Twitch channel name (without @)<br>
+                Note: Only username is supported for Twitch
             </small>
         </div>
     </div>
@@ -436,20 +442,24 @@
             const identifierType = document.getElementById('identifier-type');
             const youtubeHelp = document.getElementById('youtube-help');
             const tiktokHelp = document.getElementById('tiktok-help');
+            const twitchHelp = document.getElementById('twitch-help');
             
-            if (platform === 'tiktok') {
-                // TikTok only supports username
+            if (platform === 'tiktok' || platform === 'twitch') {
+                // These platforms only support username
                 identifierType.value = 'username';
                 identifierType.disabled = true;
-                document.getElementById('channel-id').placeholder = 'Enter TikTok username';
+                document.getElementById('channel-id').placeholder = 
+                    `Enter ${platform === 'tiktok' ? 'TikTok' : 'Twitch'} username`;
                 youtubeHelp.style.display = 'none';
-                tiktokHelp.style.display = 'block';
+                tiktokHelp.style.display = platform === 'tiktok' ? 'block' : 'none';
+                twitchHelp.style.display = platform === 'twitch' ? 'block' : 'none';
             } else {
                 // YouTube supports all identifier types
                 identifierType.disabled = false;
                 document.getElementById('channel-id').placeholder = 'Enter ID';
                 youtubeHelp.style.display = 'block';
                 tiktokHelp.style.display = 'none';
+                twitchHelp.style.display = 'none';
             }
         });
     </script>
