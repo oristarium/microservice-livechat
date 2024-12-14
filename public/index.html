@@ -335,17 +335,6 @@
             } else {
                 document.title = 'LiveChat';
             }
-            
-            // Update storage type indicator (Redis/In-Memory)
-            if (status.storage_type) {
-                const storageBadge = document.getElementById('storage-type');
-                storageBadge.textContent = status.storage_type === 'redis' ? 'Redis' : 'In-Memory';
-                storageBadge.className = `storage-badge ${status.storage_type}`;
-            }
-            
-            if (status.status === 'started' || status.status === 'subscribed') {
-                container.className = 'connected';
-            }
         }
 
         // Update UI based on selected platform
