@@ -62,6 +62,9 @@ app.use((req, res, next) => {
     next();
 });
 
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Serve static files with proper headers
 app.use('/test', (req, res, next) => {
     if (req.path === '/' || req.path === '') {

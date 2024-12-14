@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LiveChat Test</title>
+    <title>LiveChat</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <style>
         /* Layout: Two-column grid for chat and stats */
         body {
@@ -317,6 +318,7 @@
                                 const statusEl = document.getElementById('connection-status');
                                 statusEl.textContent = `Error: ${data.error}`;
                                 statusEl.className = 'error';
+                                document.title = 'LiveChat';
                                 
                                 // If stream is not live, clear the chat container
                                 if (data.code === 'STREAM_NOT_LIVE') {
@@ -347,6 +349,7 @@
                 ws.send(JSON.stringify({ type: 'unsubscribe' }));
                 ws.close();
             }
+            document.title = 'LiveChat';
         }
 
         /**
@@ -423,6 +426,15 @@
         function updateStatus(status) {
             const container = document.getElementById('connection-status');
             container.textContent = `Status: ${status.status}`;
+            
+            // Update page title when connected
+            if (status.status === 'started' || status.status === 'subscribed') {
+                const platform = document.getElementById('platform-type').value;
+                const channelId = document.getElementById('channel-id').value;
+                document.title = `${channelId} (${platform}) - LiveChat`;
+            } else {
+                document.title = 'LiveChat';
+            }
             
             // Update storage type indicator (Redis/In-Memory)
             if (status.storage_type) {
