@@ -158,19 +158,6 @@ wss.on('connection', (ws) => {
                                     throw new Error(`Unsupported platform: ${platform}`);
                             }
 
-                            // Initialize stats with proper error handling
-                            try {
-                                chatHandler.stats = await StatsFactory.createStats(identifier);
-                            } catch (error) {
-                                console.error('Failed to initialize stats:', error);
-                                ws.send(JSON.stringify({ 
-                                    type: SERVER_MESSAGE_TYPES.ERROR, 
-                                    error: 'Failed to initialize stats',
-                                    details: error.message
-                                }));
-                                return;
-                            }
-
                             streamData = {
                                 chatHandler,
                                 clients: new Set(),
@@ -179,19 +166,6 @@ wss.on('connection', (ws) => {
                             activeStreams.set(identifier, streamData);
 
                             try {
-                                const statsCallbacks = process.env.ENABLE_STATS !== 'false' ? {
-                                    onStatsUpdate: (stats) => {
-                                        streamData.clients.forEach(client => {
-                                            if (client.readyState === 1) {
-                                                client.send(JSON.stringify({
-                                                    type: SERVER_MESSAGE_TYPES.STATS,
-                                                    data: stats
-                                                }));
-                                            }
-                                        });
-                                    }
-                                } : {};
-
                                 const ok = await chatHandler.start(
                                     // onStart
                                     (liveId) => {
@@ -213,7 +187,6 @@ wss.on('connection', (ws) => {
                                     },
                                     // onEnd
                                     () => {
-                                        // Only send end message if not already cleaning up
                                         if (activeStreams.has(identifier)) {
                                             cleanupStream(identifier);
                                         }
@@ -228,8 +201,7 @@ wss.on('connection', (ws) => {
                                                 }));
                                             }
                                         });
-                                    },
-                                    statsCallbacks.onStatsUpdate
+                                    }
                                 );
 
                                 if (!ok) {
@@ -258,8 +230,7 @@ wss.on('connection', (ws) => {
                         ws.send(JSON.stringify({ 
                             type: SERVER_MESSAGE_TYPES.STATUS, 
                             status: 'subscribed', 
-                            identifier,
-                            storage_type: process.env.STATS_STORAGE || 'memory'
+                            identifier
                         }));
                     } catch (error) {
                         console.error('Error in subscribe handler:', error);
@@ -290,30 +261,6 @@ wss.on('connection', (ws) => {
                             }
                         }
                         currentChannelId = null;
-                    }
-                    break;
-
-                case CLIENT_MESSAGE_TYPES.GET_STATS:
-                    if (currentChannelId) {
-                        const streamData = activeStreams.get(currentChannelId);
-                        if (streamData) {
-                            ws.send(JSON.stringify({
-                                type: SERVER_MESSAGE_TYPES.STATS,
-                                data: streamData.chatHandler.getCurrentStats()
-                            }));
-                        } else {
-                            ws.send(JSON.stringify({
-                                type: SERVER_MESSAGE_TYPES.ERROR,
-                                error: "Stream data not found",
-                                code: "STREAM_NOT_FOUND"
-                            }));
-                        }
-                    } else {
-                        ws.send(JSON.stringify({
-                            type: SERVER_MESSAGE_TYPES.ERROR,
-                            error: "No active chat connection",
-                            code: "NO_ACTIVE_CHAT"
-                        }));
                     }
                     break;
 
