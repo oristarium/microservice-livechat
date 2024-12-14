@@ -221,7 +221,10 @@ Common error codes:
 ## Example Usage
 
 ```javascript
-const ws = new WebSocket('ws://localhost:3000');
+// Use secure WebSocket if needed
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsUrl = `${protocol}//${window.location.host}/ws`;  // Note the /ws path
+const ws = new WebSocket(wsUrl);
 
 // Connect to YouTube chat using username (default)
 ws.send(JSON.stringify({

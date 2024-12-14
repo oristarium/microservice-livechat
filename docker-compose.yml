@@ -34,14 +34,14 @@ services:
     depends_on:
       - redis
     labels:
-      # WebSocket route
-      - "traefik.http.routers.microservice-livechat-ws.rule=Host(`wschat.oristarium.com`)"
+      # WebSocket route - only for /ws path
+      - "traefik.http.routers.microservice-livechat-ws.rule=Host(`wschat.oristarium.com`) && PathPrefix(`/ws`)"
       - "traefik.http.routers.microservice-livechat-ws.entrypoints=https"
       - "traefik.http.routers.microservice-livechat-ws.tls.certresolver=myresolver"
       - "traefik.http.routers.microservice-livechat-ws.middlewares=websocket"
       
-      # Web route for /test
-      - "traefik.http.routers.microservice-livechat-web.rule=Host(`wschat.oristarium.com`) && PathPrefix(`/test`)"
+      # Web route - for everything except /ws
+      - "traefik.http.routers.microservice-livechat-web.rule=Host(`wschat.oristarium.com`)"
       - "traefik.http.routers.microservice-livechat-web.entrypoints=https"
       - "traefik.http.routers.microservice-livechat-web.tls.certresolver=myresolver"
       - "traefik.http.routers.microservice-livechat-web.middlewares=security-headers,compress"
@@ -78,13 +78,12 @@ services:
       - "traefik.http.routers.microservice-livechat-health.tls.certresolver=myresolver"
       - "traefik.http.routers.microservice-livechat-health.middlewares=security-headers"
       
-      # Static files middleware
-      - "traefik.http.middlewares.livechat-static.headers.customrequestheaders.Sec-WebSocket-Key=static-files"
+      # Static files route (corrected)
       - "traefik.http.routers.livechat-static.rule=Host(`wschat.oristarium.com`) && PathPrefix(`/assets/`)"
-      - "traefik.http.routers.livechat-static.entrypoints=websecure"
-      - "traefik.http.routers.livechat-static.tls=true"
-      - "traefik.http.routers.livechat-static.middlewares=livechat-static"
-      - "traefik.http.routers.livechat-static.service=livechat"
+      - "traefik.http.routers.livechat-static.entrypoints=https"
+      - "traefik.http.routers.livechat-static.tls.certresolver=myresolver"
+      - "traefik.http.routers.livechat-static.middlewares=security-headers,compress"
+      - "traefik.http.routers.livechat-static.service=microservice-livechat"
     networks:
       - web
     expose:

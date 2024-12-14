@@ -11,10 +11,10 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ 
     server,
-    path: '/',  // Accept WebSocket connections on any path
+    path: '/ws',  // Only handle WebSocket connections on /ws path
     verifyClient: (info, cb) => {
         console.log('Verifying client connection:', info.req.headers);
-        cb(true);  // Accept all connections for now
+        cb(true);
     }
 });
 

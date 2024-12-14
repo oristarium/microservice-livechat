@@ -259,7 +259,7 @@
             
             // Use secure WebSocket if page is served over HTTPS
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}`;
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
             
             try {
                 ws = new WebSocket(wsUrl);
