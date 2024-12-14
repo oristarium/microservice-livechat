@@ -17,8 +17,17 @@ RUN groupadd -r nodeapp && \
 COPY --from=builder /build/node_modules ./node_modules
 COPY --chown=nodeapp:nodeapp . .
 
-# Set resource limits
-ENV NODE_OPTIONS="--max-old-space-size=512"
+# Set resource limits - reduce from 512MB to 256MB
+ENV NODE_OPTIONS="--max-old-space-size=256"
+
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Add memory monitoring
+ENV NODE_OPTIONS="${NODE_OPTIONS} --heapsnapshot-near-heap-limit=3"
+
+# Add garbage collection options
+ENV NODE_OPTIONS="${NODE_OPTIONS} --expose-gc"
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

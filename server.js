@@ -6,6 +6,7 @@ const { TikTokChatHandler } = require('./src/platforms/tiktok');
 const { TwitchChatHandler } = require('./src/platforms/twitch');
 const { CLIENT_MESSAGE_TYPES, SERVER_MESSAGE_TYPES } = require('./src/constants/messageTypes');
 const path = require('path');
+const v8 = require('v8');
 
 const app = express();
 const server = http.createServer(app);
@@ -79,8 +80,38 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', activeStreams: activeStreams.size });
 });
 
+// Add memory monitoring function
+function checkMemory() {
+    const heapStats = v8.getHeapStatistics();
+    const usedMemory = heapStats.used_heap_size / (1024 * 1024);
+    const totalMemory = heapStats.heap_size_limit / (1024 * 1024);
+    
+    console.log(`Memory Usage: ${Math.round(usedMemory)}MB / ${Math.round(totalMemory)}MB`);
+    
+    // Force garbage collection if memory usage is high
+    if (usedMemory > totalMemory * 0.7) {
+        if (global.gc) {
+            console.log('Running garbage collection...');
+            global.gc();
+        }
+    }
+}
+
+// Add periodic memory checks
+setInterval(checkMemory, 30000);
+
 // Handle WebSocket connections
 wss.on('connection', (ws) => {
+    // Track active connections
+    const activeConnections = wss.clients.size;
+    console.log(`New connection. Total active: ${activeConnections}`);
+    
+    // Force cleanup if too many connections
+    if (activeConnections > 100) {  // Adjust this number based on your needs
+        console.log('Too many connections, forcing garbage collection');
+        if (global.gc) global.gc();
+    }
+    
     let currentChannelId = null;
 
     ws.on('message', async (message) => {
