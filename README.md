@@ -308,6 +308,9 @@ GET `/health` - Returns the status of the service and number of active streams:
 }
 ```
 
+I'll update the deployment section of the README.md to reflect our learnings and improvements. Here's the revised deployment section:
+
+```markdown
 ## Deployment
 
 ### Using GitHub Actions
@@ -332,65 +335,115 @@ DOMAIN=your_websocket_domain  # e.g., wschat.example.com
 
 # Let's Encrypt SSL
 TRAEFIK_ACME_EMAIL=your_email@example.com  # Email for SSL certificate notifications
+
+# Optional: Custom Deploy Path (defaults to /var/www/microservice-livechat)
+DEPLOY_PATH=/path/to/your/deployment
 ```
 
-Example values:
-```bash
-# Example VPS_USER
-VPS_USER=ubuntu
+3. The deployment process will:
+   - Build and push Docker image to Docker Hub
+   - Create required directories on VPS
+   - Set up Docker network if needed
+   - Handle Traefik deployment intelligently:
+     - Use existing Traefik if found
+     - Deploy new Traefik instance if none exists
+   - Deploy the microservice with Redis
 
-# Example VPS_HOST
-VPS_HOST=123.456.789.0
-# or
-VPS_HOST=vps.example.com
+### Key Features of the Deployment
 
-# Example DOMAIN
-DOMAIN=wschat.example.com
+1. **Shared Traefik Infrastructure**:
+   - One Traefik instance can serve multiple microservices
+   - Automatic SSL certificate management
+   - Shared network for service discovery
 
-# Example TRAEFIK_ACME_EMAIL
-TRAEFIK_ACME_EMAIL=admin@example.com
-```
+2. **Smart Service Management**:
+   - Checks for existing Traefik instance
+   - Only deploys Traefik if needed
+   - Maintains SSL certificates across deployments
 
-3. Set up your VPS:
-   - Install Docker and Docker Compose
-   - Create the web network:
-   ```bash
-   docker network create web
-   ```
-   - Install and configure Traefik (included in the docker-compose.yml)
+3. **Flexible Configuration**:
+   - Configurable deployment path
+   - Environment-based settings
+   - Automatic network creation
 
-4. Push to the main branch, and GitHub Actions will:
-   - Build the Docker image
-   - Push it to Docker Hub
-   - Deploy it to your VPS
-   - Set up SSL certificates automatically
+4. **Resource Management**:
+   - CPU and memory limits for all services
+   - Proper logging configuration
+   - Automatic container restarts
 
 ### Manual Deployment
 
-If you prefer to deploy manually, you can use the following commands on your VPS:
+If you prefer to deploy manually:
 
 ```bash
-# Create required directories
+# Create web network if it doesn't exist
+docker network create web
+
+# Create deployment directory
 mkdir -p /var/www/microservice-livechat
 cd /var/www/microservice-livechat
 
+# Create SSL certificates directory
+mkdir -p letsencrypt
+
 # Create .env file
-echo "DOMAIN=your_websocket_domain" > .env
+cat > .env << EOL
+DOMAIN=your_websocket_domain
+TRAEFIK_ACME_EMAIL=your_email@example.com
+EOL
 
 # Download docker-compose.yml
 wget https://raw.githubusercontent.com/yourusername/your-repo/main/docker-compose.yml
 
-# Create web network if it doesn't exist
-docker network create web
-
-# Start the services
+# Start services
 docker-compose up -d
 ```
 
-The service will be available at:
+### Directory Structure
+
+```
+/var/www/microservice-livechat/
+├── docker-compose.yml
+├── .env
+└── letsencrypt/
+    └── acme.json  # SSL certificates
+```
+
+### Checking Deployment
+
+1. Check service status:
+```bash
+docker ps
+docker-compose ps
+```
+
+2. View logs:
+```bash
+docker-compose logs -f microservice-livechat
+```
+
+3. Test endpoints:
 - WebSocket: `wss://your_domain/ws`
 - Test Interface: `https://your_domain/test`
 - Health Check: `https://your_domain/health`
+
+### Troubleshooting
+
+1. If Traefik is not starting:
+```bash
+docker logs traefik
+```
+
+2. Check network connectivity:
+```bash
+docker network inspect web
+```
+
+3. Clean up all containers:
+```bash
+docker-compose down --remove-orphans
+docker system prune -a --volumes  # Warning: This removes all unused containers, images, and volumes
+```
 
 ## Credits
 
