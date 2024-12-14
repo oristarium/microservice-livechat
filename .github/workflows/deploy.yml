@@ -60,11 +60,16 @@ jobs:
           # Copy files directly to destination
           scp .env docker-compose.yml $VPS_USER@$VPS_HOST:/var/www/microservice-livechat/
           
-          # Deploy
+          # Deploy with Traefik check
           ssh $VPS_USER@$VPS_HOST "
             cd /var/www/microservice-livechat &&
-            docker container rm -f traefik || true &&
-            docker-compose down --remove-orphans || true &&
+            # Check if Traefik is running
+            if docker ps -q -f name=^/traefik$ >/dev/null; then
+              echo 'Traefik is already running, skipping Traefik deployment' &&
+              # Remove Traefik service from docker-compose
+              docker-compose down --remove-orphans &&
+              sed -i '/^  traefik:/,/^  [^t]/{/^  [^t]/!d}' docker-compose.yml
+            fi &&
             docker-compose pull &&
             docker-compose up -d
           "

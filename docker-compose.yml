@@ -1,6 +1,37 @@
 version: '3.8'
 
 services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.http.address=:80"
+      - "--entrypoints.https.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL:-your@email.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--log.level=DEBUG"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "letsencrypt:/letsencrypt"
+    networks:
+      - web
+    restart: unless-stopped
+    environment:
+      - TRAEFIK_ACME_EMAIL=${TRAEFIK_ACME_EMAIL}
+    labels:
+      - "traefik.enable=true"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    # This makes docker-compose ignore errors if the container already exists
+    x-condition: "! docker ps -q -f name=^/traefik$"
+
   microservice-livechat:
     image: roffidaijoubu/microservice-livechat:latest
     environment:
@@ -13,13 +44,13 @@ services:
       # WebSocket route - only for /ws path
       - "traefik.http.routers.microservice-livechat-ws.rule=Host(`${DOMAIN}`) && PathPrefix(`/ws`)"
       - "traefik.http.routers.microservice-livechat-ws.entrypoints=https"
-      - "traefik.http.routers.microservice-livechat-ws.tls.certresolver=myresolver"
+      - "traefik.http.routers.microservice-livechat-ws.tls.certresolver=letsencrypt"
       - "traefik.http.routers.microservice-livechat-ws.middlewares=websocket"
       
       # Web route - for everything except /ws
       - "traefik.http.routers.microservice-livechat-web.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.microservice-livechat-web.entrypoints=https"
-      - "traefik.http.routers.microservice-livechat-web.tls.certresolver=myresolver"
+      - "traefik.http.routers.microservice-livechat-web.tls.certresolver=letsencrypt"
       - "traefik.http.routers.microservice-livechat-web.middlewares=security-headers,compress"
       
       # HTTP to HTTPS redirect
@@ -51,13 +82,13 @@ services:
       # Health check route
       - "traefik.http.routers.microservice-livechat-health.rule=Host(`${DOMAIN}`) && PathPrefix(`/health`)"
       - "traefik.http.routers.microservice-livechat-health.entrypoints=https"
-      - "traefik.http.routers.microservice-livechat-health.tls.certresolver=myresolver"
+      - "traefik.http.routers.microservice-livechat-health.tls.certresolver=letsencrypt"
       - "traefik.http.routers.microservice-livechat-health.middlewares=security-headers"
       
       # Static files route (corrected)
       - "traefik.http.routers.livechat-static.rule=Host(`${DOMAIN}`) && PathPrefix(`/assets/`)"
       - "traefik.http.routers.livechat-static.entrypoints=https"
-      - "traefik.http.routers.livechat-static.tls.certresolver=myresolver"
+      - "traefik.http.routers.livechat-static.tls.certresolver=letsencrypt"
       - "traefik.http.routers.livechat-static.middlewares=security-headers,compress"
       - "traefik.http.routers.livechat-static.service=microservice-livechat"
       - "traefik.enable=true"
@@ -100,3 +131,4 @@ networks:
 
 volumes:
   redis-data:
+  letsencrypt:
