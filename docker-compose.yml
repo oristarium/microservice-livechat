@@ -77,6 +77,14 @@ services:
       - "traefik.http.routers.microservice-livechat-health.entrypoints=https"
       - "traefik.http.routers.microservice-livechat-health.tls.certresolver=myresolver"
       - "traefik.http.routers.microservice-livechat-health.middlewares=security-headers"
+      
+      # Static files middleware
+      - "traefik.http.middlewares.livechat-static.headers.customrequestheaders.Sec-WebSocket-Key=static-files"
+      - "traefik.http.routers.livechat-static.rule=Host(`${DOMAIN}`) && PathPrefix(`/assets/`)"
+      - "traefik.http.routers.livechat-static.entrypoints=websecure"
+      - "traefik.http.routers.livechat-static.tls=true"
+      - "traefik.http.routers.livechat-static.middlewares=livechat-static"
+      - "traefik.http.routers.livechat-static.service=livechat"
     networks:
       - web
     expose:
