@@ -1,5 +1,4 @@
 const { LiveChat } = require('youtube-chat');
-const StatsFactory = require('../utils/StatsFactory');
 
 // Helper functions
 function transformBadges(badge) {
@@ -124,7 +123,7 @@ function transformYouTubeMessage(ytMessage) {
 }
 
 class YouTubeChatHandler {
-    constructor(identifier, identifierType) {
+    constructor(identifier, identifierType = 'username') {
         let liveChatOptions = {};
         switch (identifierType) {
             case 'channelId':
@@ -140,10 +139,6 @@ class YouTubeChatHandler {
                 throw new Error('Invalid identifier type');
         }
         this.liveChat = new LiveChat(liveChatOptions);
-        this.chatStats = StatsFactory.createStats(identifier, {
-            storage: process.env.STATS_STORAGE || 'memory',
-            redisUrl: process.env.REDIS_URL
-        });
     }
 
     async start(onStart, onChat, onEnd, onError, onStatsUpdate) {
@@ -152,26 +147,12 @@ class YouTubeChatHandler {
         this.liveChat.on('chat', (chatItem) => {
             const transformedMessage = transformYouTubeMessage(chatItem);
             
-            // Update stats when receiving a chat message
-            this.chatStats.updateStats(transformedMessage.data.author)
-                .then(stats => {
-                    if (onStatsUpdate) {
-                        onStatsUpdate(stats);
-                    }
-                });
-            
             onChat(transformedMessage);
         });
         this.liveChat.on('end', () => {
-            this.chatStats.reset();
             onEnd();
         });
         this.liveChat.on('error', onError);
-
-        // Set up stats update handler
-        if (onStatsUpdate) {
-            this.chatStats.on('statsUpdated', onStatsUpdate);
-        }
 
         // Start the chat
         return await this.liveChat.start();
@@ -183,10 +164,6 @@ class YouTubeChatHandler {
             if (this.liveChat) {
                 this.liveChat.stop();
             }
-            // Then cleanup stats
-            if (this.chatStats) {
-                await this.chatStats.cleanup();
-            }
         } catch (error) {
             console.error('Error during cleanup:', error);
         }
@@ -194,10 +171,6 @@ class YouTubeChatHandler {
 
     async cleanup() {
         await this.stop();
-    }
-
-    getCurrentStats() {
-        return this.chatStats.getStats();
     }
 }
 
