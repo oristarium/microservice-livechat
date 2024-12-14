@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   traefik:
@@ -47,45 +47,45 @@ services:
       - "traefik.http.routers.microservice-livechat-ws.entrypoints=https"
       - "traefik.http.routers.microservice-livechat-ws.tls.certresolver=letsencrypt"
       - "traefik.http.routers.microservice-livechat-ws.middlewares=websocket"
-      
+
       # Web route - for everything except /ws
       - "traefik.http.routers.microservice-livechat-web.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.microservice-livechat-web.entrypoints=https"
       - "traefik.http.routers.microservice-livechat-web.tls.certresolver=letsencrypt"
       - "traefik.http.routers.microservice-livechat-web.middlewares=security-headers,compress"
-      
+
       # HTTP to HTTPS redirect
       - "traefik.http.routers.microservice-livechat-http.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.microservice-livechat-http.entrypoints=http"
       - "traefik.http.routers.microservice-livechat-http.middlewares=https-redirect"
-      
+
       # WebSocket middleware
       - "traefik.http.middlewares.websocket.headers.customRequestHeaders.Connection=upgrade"
       - "traefik.http.middlewares.websocket.headers.customRequestHeaders.Upgrade=websocket"
-      
+
       # Security headers
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Frame-Options=DENY"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-XSS-Protection=1; mode=block"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Referrer-Policy=strict-origin-when-cross-origin"
       - "traefik.http.middlewares.security-headers.headers.permissionsPolicy=geolocation=self"
-      
+
       # Compression middleware
       - "traefik.http.middlewares.compress.compress=true"
-      
+
       # HTTPS redirect middleware
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
-      
+
       # Service configuration
       - "traefik.http.services.microservice-livechat.loadbalancer.server.port=3000"
-      
+
       # Health check route
       - "traefik.http.routers.microservice-livechat-health.rule=Host(`${DOMAIN}`) && PathPrefix(`/health`)"
       - "traefik.http.routers.microservice-livechat-health.entrypoints=https"
       - "traefik.http.routers.microservice-livechat-health.tls.certresolver=letsencrypt"
       - "traefik.http.routers.microservice-livechat-health.middlewares=security-headers"
-      
+
       # Static files route (corrected)
       - "traefik.http.routers.livechat-static.rule=Host(`${DOMAIN}`) && PathPrefix(`/assets/`)"
       - "traefik.http.routers.livechat-static.entrypoints=https"
@@ -100,10 +100,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.50'
+          cpus: "0.50"
           memory: 512M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 256M
     logging:
       driver: "json-file"
@@ -112,11 +112,17 @@ services:
         max-file: "5"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 40s
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
@@ -133,7 +139,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.30'
+          cpus: "0.30"
           memory: 256M
     restart: unless-stopped
 

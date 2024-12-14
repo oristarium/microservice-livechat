@@ -20,9 +20,6 @@ COPY --chown=nodeapp:nodeapp . .
 # Set resource limits - reduce from 512MB to 256MB
 ENV NODE_OPTIONS="--max-old-space-size=256"
 
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
 # Add memory monitoring
 ENV NODE_OPTIONS="${NODE_OPTIONS} --heapsnapshot-near-heap-limit=3"
 
