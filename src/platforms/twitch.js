@@ -1,5 +1,4 @@
 const WebSocket = require('ws');
-const StatsFactory = require('../utils/StatsFactory');
 
 // Helper functions
 function transformBadges(badgesStr) {
@@ -93,10 +92,6 @@ class TwitchChatHandler {
         this.pingInterval = 1000 * 60; // 1 minute
         this.socket = null;
         this.pingTimeout = null;
-        this.chatStats = StatsFactory.createStats(identifier, {
-            storage: process.env.STATS_STORAGE || 'memory',
-            redisUrl: process.env.REDIS_URL
-        });
     }
 
     async start(onStart, onChat, onEnd, onError, onStatsUpdate) {
@@ -120,14 +115,6 @@ class TwitchChatHandler {
                     if (parsedMessage.commandId === 'PRIVMSG') {
                         const transformedMessage = transformTwitchMessage(parsedMessage);
                         
-                        // Update stats
-                        this.chatStats.updateStats(transformedMessage.data.author)
-                            .then(stats => {
-                                if (onStatsUpdate) {
-                                    onStatsUpdate(stats);
-                                }
-                            });
-                        
                         onChat(transformedMessage);
                     }
                 }
@@ -135,11 +122,6 @@ class TwitchChatHandler {
 
             // Call onStart with basic room info
             onStart({ roomId: this.channelName });
-
-            // Set up stats update handler
-            if (onStatsUpdate) {
-                this.chatStats.on('statsUpdated', onStatsUpdate);
-            }
 
             return true;
         } catch (error) {
@@ -193,11 +175,6 @@ class TwitchChatHandler {
                 this.socket.close();
                 this.socket = null;
             }
-
-            // Cleanup stats
-            if (this.chatStats) {
-                await this.chatStats.cleanup();
-            }
         } catch (error) {
             console.error('Error during cleanup:', error);
         }
@@ -205,10 +182,6 @@ class TwitchChatHandler {
 
     async cleanup() {
         await this.stop();
-    }
-
-    getCurrentStats() {
-        return this.chatStats.getStats();
     }
 }
 

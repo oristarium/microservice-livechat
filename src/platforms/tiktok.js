@@ -1,5 +1,4 @@
 const { WebcastPushConnection } = require('tiktok-live-connector');
-const StatsFactory = require('../utils/StatsFactory');
 
 // Helper functions
 function transformBadges(badges) {
@@ -56,10 +55,6 @@ function transformTikTokMessage(tikTokMessage) {
 class TikTokChatHandler {
     constructor(identifier) {
         this.liveChat = new WebcastPushConnection(identifier);
-        this.chatStats = StatsFactory.createStats(identifier, {
-            storage: process.env.STATS_STORAGE || 'memory',
-            redisUrl: process.env.REDIS_URL
-        });
     }
 
     async start(onStart, onChat, onEnd, onError, onStatsUpdate) {
@@ -75,30 +70,16 @@ class TikTokChatHandler {
             this.liveChat.on('chat', (chatData) => {
                 const transformedMessage = transformTikTokMessage(chatData);
                 
-                // Update stats when receiving a chat message
-                this.chatStats.updateStats(transformedMessage.data.author)
-                    .then(stats => {
-                        if (onStatsUpdate) {
-                            onStatsUpdate(stats);
-                        }
-                    });
-                
                 onChat(transformedMessage);
             });
 
             // Handle stream end
             this.liveChat.on('streamEnd', () => {
-                this.chatStats.reset();
                 onEnd();
             });
 
             // Handle errors
             this.liveChat.on('error', onError);
-
-            // Set up stats update handler
-            if (onStatsUpdate) {
-                this.chatStats.on('statsUpdated', onStatsUpdate);
-            }
 
             return true;
         } catch (error) {
@@ -113,10 +94,6 @@ class TikTokChatHandler {
             if (this.liveChat) {
                 this.liveChat.disconnect();
             }
-            // Then cleanup stats
-            if (this.chatStats) {
-                await this.chatStats.cleanup();
-            }
         } catch (error) {
             console.error('Error during cleanup:', error);
         }
@@ -124,10 +101,6 @@ class TikTokChatHandler {
 
     async cleanup() {
         await this.stop();
-    }
-
-    getCurrentStats() {
-        return this.chatStats.getStats();
     }
 }
 
