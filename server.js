@@ -2,6 +2,7 @@ const express = require('express');
 const { WebSocketServer } = require('ws');
 const http = require('http');
 const { YouTubeChatHandler } = require('./src/platforms/youtube');
+const { TikTokChatHandler } = require('./src/platforms/tiktok');
 const { CLIENT_MESSAGE_TYPES, SERVER_MESSAGE_TYPES } = require('./src/constants/messageTypes');
 const path = require('path');
 
@@ -111,9 +112,11 @@ wss.on('connection', (ws) => {
                             case 'youtube':
                                 chatHandler = new YouTubeChatHandler(identifier, identifierType);
                                 break;
-                            // Add other platforms here
+                            case 'tiktok':
+                                chatHandler = new TikTokChatHandler(identifier);
+                                break;
                             default:
-                                throw new Error('Unsupported platform');
+                                throw new Error(`Unsupported platform: ${platform}`);
                         }
 
                         streamData = {
