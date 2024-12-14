@@ -67,7 +67,9 @@ jobs:
             if docker ps -q -f name=^/traefik$ >/dev/null; then
               echo 'Traefik is already running, skipping Traefik deployment' &&
               # Create a temporary file without Traefik service
-              grep -v -A 50 '^  traefik:' docker-compose.yml | grep -B 50 '^networks:' > temp.yml &&
+              awk '/^services:/,/^networks:/ { if (!/^  traefik:/) print }' docker-compose.yml > temp.yml &&
+              echo 'networks:' >> temp.yml &&
+              awk '/^networks:/,0' docker-compose.yml | grep -v '^networks:' >> temp.yml &&
               mv temp.yml docker-compose.yml &&
               # Ensure clean shutdown
               docker-compose down --remove-orphans
