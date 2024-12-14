@@ -56,8 +56,9 @@ jobs:
 
           # Deploy
           ssh $VPS_USER@$VPS_HOST "
-            # Create directory if it doesn't exist
+            # Create directories
             mkdir -p ${DEPLOY_DIR}
+            mkdir -p ${DEPLOY_DIR}/letsencrypt
 
             # Check if network exists, create if it doesn't
             if ! docker network ls | grep -q 'web'; then
