@@ -63,17 +63,12 @@ jobs:
           # Deploy with Traefik check
           ssh $VPS_USER@$VPS_HOST "
             cd /var/www/microservice-livechat &&
-            # Check if Traefik is running
             if docker ps -q -f name=^/traefik$ >/dev/null; then
               echo 'Traefik is already running, skipping Traefik deployment' &&
-              # Create a temporary file without Traefik service
-              awk '/^services:/,/^networks:/ { if (!/^  traefik:/) print }' docker-compose.yml > temp.yml &&
-              echo 'networks:' >> temp.yml &&
-              awk '/^networks:/,0' docker-compose.yml | grep -v '^networks:' >> temp.yml &&
-              mv temp.yml docker-compose.yml &&
-              # Ensure clean shutdown
-              docker-compose down --remove-orphans
+              cp docker-compose.yml docker-compose.yml.bak &&
+              sed -i '/^  traefik:/,/^  [^ ]/d' docker-compose.yml
             fi &&
+            docker-compose down --remove-orphans &&
             docker-compose pull &&
             docker-compose up -d
           "
