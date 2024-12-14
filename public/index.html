@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LiveChat Test</title>
     <style>
         /* Layout: Two-column grid for chat and stats */
@@ -12,8 +12,14 @@
             margin: 0 auto;
             padding: 20px;
             display: grid;
-            grid-template-columns: 2fr 1fr; /* Chat takes 2/3, stats takes 1/3 */
+            grid-template-columns: 1fr; /* Single column on mobile */
             gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                grid-template-columns: 2fr 1fr; /* Two columns on desktop */
+            }
         }
 
         /* Chat container styles */
@@ -22,11 +28,13 @@
             overflow-y: auto;
             border: 1px solid #ccc;
             padding: 10px;
+            min-height: 300px; /* Smaller height on mobile */
         }
 
         /* Stats container styles */
         #stats-container {
-            height: 600px;
+            height: auto;
+            max-height: 600px;
             overflow-y: auto;
             border: 1px solid #ccc;
             padding: 10px;
@@ -37,6 +45,7 @@
             margin-bottom: 10px;
             padding: 5px;
             border-bottom: 1px solid #eee;
+            word-break: break-word; /* Prevent text overflow on mobile */
         }
 
         /* Author name styling */
@@ -48,11 +57,11 @@
         /* Badge styling for user roles */
         .badge {
             display: inline-block;
-            padding: 2px 4px;
-            margin-right: 4px;
+            padding: 2px 6px;
+            margin: 2px 4px;
             border-radius: 3px;
-            font-size: 12px;
-            background: #e0e0e0;
+            font-size: 11px;
+            white-space: nowrap;
         }
         .badge.mod { background: #2196F3; color: white; } /* Moderator */
         .badge.broadcaster { background: #f44336; color: white; } /* Channel owner */
@@ -60,13 +69,9 @@
 
         /* Emote styling */
         .emote {
-            display: inline-block;
+            max-height: 28px;
+            width: auto;
             vertical-align: middle;
-            height: 28px;
-            margin: -4px 1px;
-        }
-        .emote[data-custom="true"] {
-            height: 32px; /* Custom emotes are slightly larger */
         }
 
         /* Storage type indicator */
@@ -82,15 +87,25 @@
 
         /* Controls section */
         .controls {
-            grid-column: 1 / -1; /* Span full width */
-            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .controls {
+                flex-direction: row;
+                align-items: center;
+                flex-wrap: wrap;
+            }
         }
 
         /* Connection status indicator */
         #connection-status {
             margin-top: 10px;
-            padding: 5px;
+            padding: 8px;
             border-radius: 3px;
+            text-align: center;
         }
         .connected { background-color: #4CAF50; color: white; }
         .disconnected { background-color: #f44336; color: white; }
@@ -98,19 +113,40 @@
 
         /* Helper text styling */
         .helper-text {
-            grid-column: 1 / -1; /* Span full width */
-            margin-top: 10px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-        }
-
-        .helper-text {
             margin-top: 8px;
             color: #666;
             font-size: 12px;
+            text-align: left;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
         }
 
+        .controls input[type="text"],
+        .controls select,
+        .controls button {
+            width: 100%;
+            padding: 8px;
+            margin: 0;
+            box-sizing: border-box;
+            font-size: 16px; /* Better for mobile tapping */
+        }
+
+        @media (min-width: 768px) {
+            .controls input[type="text"] {
+                min-width: 250px;
+                width: auto;
+            }
+            .controls select {
+                width: auto;
+            }
+            .controls button {
+                width: auto;
+                min-width: 100px;
+            }
+        }
+
+        /* Controls elements styling */
         .controls input[type="text"] {
             min-width: 250px;
             padding: 4px 8px;
@@ -119,6 +155,33 @@
         .controls select {
             padding: 4px;
         }
+
+        /* Improve stats display on mobile */
+        #stats-content ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        #stats-content li {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        /* Add some spacing between platform selector and other controls */
+        #platform-type {
+            margin-bottom: 10px;
+        }
+
+        @media (min-width: 768px) {
+            #platform-type {
+                margin-bottom: 0;
+            }
+        }
+
+        /* Add meta viewport tag if not already present */
     </style>
 </head>
 <body>
