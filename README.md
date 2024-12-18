@@ -140,67 +140,63 @@ Common error codes:
 - `UNSUPPORTED_PLATFORM`: Platform not supported
 
 3. Chat Messages:
-```javascript
+```json
 {
     "type": "chat",
+    "platform": "youtube" | "tiktok" | "twitch",
+    "timestamp": "2024-03-20T12:34:56.789Z",
+    "message_id": string,
+    "room_id": string,
     "data": {
-        "type": "chat",
-        "platform": "youtube" | "tiktok" | "twitch",
-        "timestamp": "2024-03-20T12:34:56.789Z",
-        "message_id": string,
-        "room_id": string,
-        "data": {
-            "author": {
-                "id": string,
-                "username": string,
-                "display_name": string,
-                "avatar_url": string,
-                "roles": {
-                    "broadcaster": boolean,
-                    "moderator": boolean,
-                    "subscriber": boolean,
-                    "verified": boolean
-                },
-                "badges": [
-                    {
-                        "type": "subscriber" | "moderator" | "verified" | "custom",
-                        "label": string,
-                        "image_url": string
-                    }
-                ]
+        "author": {
+            "id": string,
+            "username": string,
+            "display_name": string,
+            "avatar_url": string,
+            "roles": {
+                "broadcaster": boolean,
+                "moderator": boolean,
+                "subscriber": boolean,
+                "verified": boolean
             },
-            "content": {
-                "raw": string,        // Original message with emotes
-                "formatted": string,  // Message with emote codes
-                "sanitized": string,  // Plain text only
-                "rawHtml": string,    // Pre-rendered HTML with emotes
-                "elements": [         // Message broken into parts
-                    {
-                        "type": "text" | "emote",
-                        "value": string,
-                        "position": [number, number],
-                        "metadata"?: {  // Only for emotes
-                            "url": string,
-                            "alt": string,
-                            "is_custom": boolean
-                        }
-                    }
-                ]
-            },
-            "metadata": {
-                "type": "chat" | "super_chat",
-                "monetary_data"?: {    // Only for super_chat
-                    "amount": string,
-                    "formatted": string,
-                    "color": string
-                },
-                "sticker"?: {         // Only for sticker super_chats
-                    "url": string,
-                    "alt": string
+            "badges": [
+                {
+                    "type": "subscriber" | "moderator" | "verified" | "custom",
+                    "label": string,
+                    "image_url": string
                 }
+            ]
+        },
+        "content": {
+            "raw": string,        // Original message with emotes
+            "formatted": string,  // Message with emote codes
+            "sanitized": string,  // Plain text only
+            "rawHtml": string,    // Pre-rendered HTML with emotes
+            "elements": [         // Message broken into parts
+                {
+                    "type": "text" | "emote",
+                    "value": string,
+                    "position": [number, number],
+                    "metadata"?: {  // Only for emotes
+                        "url": string,
+                        "alt": string,
+                        "is_custom": boolean
+                    }
+                }
+            ]
+        },
+        "metadata": {
+            "type": "chat" | "super_chat",
+            "monetary_data"?: {    // Only for super_chat
+                "amount": string,
+                "formatted": string,
+                "color": string
+            },
+            "sticker"?: {         // Only for sticker super_chats
+                "url": string,
+                "alt": string
             }
         }
-    }
 }
 ```
 
