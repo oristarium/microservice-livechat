@@ -178,10 +178,9 @@ wss.on('connection', (ws) => {
                                     },
                                     // onChat
                                     (transformedMessage) => {
-                                        const message = { type: SERVER_MESSAGE_TYPES.CHAT, data: transformedMessage };
                                         streamData.clients.forEach(client => {
                                             if (client.readyState === 1) {
-                                                client.send(JSON.stringify(message));
+                                                client.send(JSON.stringify(transformedMessage));
                                             }
                                         });
                                     },
